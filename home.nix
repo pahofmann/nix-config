@@ -518,6 +518,8 @@
     google-chrome
     citrix_workspace
     teams-for-linux
+    pass # secret management
+    nextcloud-client
 
     #dev
     vscode-fhs
@@ -592,6 +594,10 @@
   # the home Manager release notes for a list of state version
   # changes in each release.
   home.stateVersion = "24.11";
+
+  # Nextcloud
+  services.nextcloud-client.enable=true;
+  services.nextcloud-client.startInBackground=true;
 
   # Let home Manager install and manage itself.
   programs.home-manager.enable = true;
