@@ -113,20 +113,27 @@
   # Configure console keymap
   console.keyMap = "us";
 
-  # Enable CUPS to print documents.
   services.printing = {
     enable = true;
-    drivers = with pkgs; [
-      pkgs.brlaser
-    ];
+    drivers = [ ]; # No need for `brlaser` since IPP Everywhere is driverless
+    defaultShared = true; # Optional: Allows sharing the printer on the network
   };
 
-    # Enable avahi for network printer discovery
   services.avahi = {
     enable = true;
     nssmdns4 = true;
-    openFirewall = true;
+    openFirewall = true; # Ensures mDNS works for network discovery
   };
+
+  # Define the printer via CUPS
+  hardware.printers.ensurePrinters = [
+    {
+      name = "Brother_QL_1110NWB";
+      location = "Office"; # Change as needed
+      deviceUri = "ipp://192.168.2.115/ipp/print";
+      model = "everywhere"; # IPP Everywhere driverless
+    }
+  ];
 
   # Enable sound with pipewire.
   hardware.pulseaudio.enable = false;
