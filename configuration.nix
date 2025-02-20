@@ -135,6 +135,17 @@
     }
   ];
 
+  systemd.services.ensure-printers = {
+  serviceConfig = {
+    # Don't consider this service failed if it exits with an error
+    RemainAfterExit = true;
+    # Mark as non-critical
+    StartLimitBurst = 0;
+    # Optional: you can also set a restart policy
+    Restart = "on-success";
+  };
+};
+
   # Enable sound with pipewire.
   hardware.pulseaudio.enable = false;
   security.rtkit.enable = true;
