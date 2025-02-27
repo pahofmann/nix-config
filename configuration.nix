@@ -91,7 +91,7 @@
 
     # Use the latest development drivers
     # package = config.boot.kernelPackages.nvidiaPackages.beta;
-    hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.mkDriver {
+    package = config.boot.kernelPackages.nvidiaPackages.mkDriver {
       version = "570.86.16"; # use new 570 drivers
       sha256_64bit = "sha256-RWPqS7ZUJH9JEAWlfHLGdqrNlavhaR1xMyzs8lJhy9U=";
       openSha256 = "sha256-DuVNA63+pJ8IB7Tw2gM4HbwlOh1bcDg2AN2mbEU9VPE=";
