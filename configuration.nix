@@ -185,6 +185,7 @@
     extraGroups = [ "networkmanager" "wheel" "openrazer" ];
     packages = with pkgs; [
       kdePackages.kate
+      kdePackages.calc
     ];
   };
 
