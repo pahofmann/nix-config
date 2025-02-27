@@ -87,13 +87,11 @@
 
     # Enable the Nvidia settings menu,
     # accessible via `nvidia-settings`.
-      nvidiaSettings = true;
+    nvidiaSettings = true;
 
     # Use the latest development drivers
     package = config.boot.kernelPackages.nvidiaPackages.beta;
-    
-    # Add this line to support newer GPUs
-    acceptLicense = true;
+
   };
 
   # Enable the X11 windowing system.
