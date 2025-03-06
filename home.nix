@@ -14,7 +14,7 @@
       neofetch = "${pkgs.fastfetch}/bin/fastfetch";
       glow = "${pkgs.glow}/bin/glow --pager";
       hr = ''${pkgs.hr}/bin/hr "─━"'';
-      htop = "${pkgs.bottom}/bin/btm --basic --tree --hide_table_gap --dot_marker --mem_as_value";
+      htop = "${pkgs.bottom}/bin/btm --basic --tree --hide_table_gap --dot_marker";
       less = "${pkgs.bat}/bin/bat";
       lm = "${pkgs.lima-bin}/bin/limactl";
       lolcat = "${pkgs.dotacat}/bin/dotacat";
