@@ -216,6 +216,9 @@
     openrazer-daemon
     polychromatic
 
+    # Elgato Streamdeck
+    streamcontroller
+
     gnupg
     pinentry
 
