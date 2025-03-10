@@ -254,6 +254,9 @@
     zstd
     gnupg
 
+    # Productivity
+    todoist-electron
+
     # nix related
     #
     # it provides the command `nom` works just like `nix`
