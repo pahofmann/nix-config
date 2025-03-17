@@ -538,6 +538,7 @@
     vscode-fhs
     direnv
     kubectl
+    helm
 
     #3D printing
     prusa-slicer
