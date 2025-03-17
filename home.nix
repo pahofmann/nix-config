@@ -6,6 +6,7 @@
   programs.fish = {
     enable = true;
     shellAliases = {
+      k = "kubectl";
       brg = "${pkgs.bat-extras.batgrep}/bin/batgrep";
       cat = "${pkgs.bat}/bin/bat --paging=never";
       clock = ''${pkgs.tty-clock}/bin/tty-clock -B -c -C 4 -f "%a, %d %b"'';
@@ -34,6 +35,18 @@
       unlock-armstrong = "${pkgs.gocryptfs}/bin/gocryptfs ~/Crypt/Armstrong ~/Vaults/Armstrong";
       lock-secrets = "fusermount -u ~/Vaults/Secrets";
       unlock-secrets = "${pkgs.gocryptfs}/bin/gocryptfs ~/Crypt/Secrets ~/Vaults/Secrets";
+    };
+    functions = {
+      kns = {
+        description = "Switch Kubernetes namespace";
+        body = ''
+          if test (count $argv) -eq 1
+            kubectl config set-context --current --namespace=$argv[1]
+          else
+            echo "Usage: kns <namespace>"
+          end
+        '';
+      };
     };
   };
   programs.plasma = {
@@ -524,6 +537,7 @@
     #dev
     vscode-fhs
     direnv
+    kubectl
 
     #3D printing
     prusa-slicer
