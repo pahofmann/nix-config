@@ -526,6 +526,8 @@
     #communication
     signal-desktop
     whatsapp-for-linux
+    teamspeak3
+
 
     yakuake
     google-chrome
