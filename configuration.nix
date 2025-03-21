@@ -3,7 +3,6 @@
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
 { config, pkgs, ... }:
-
 {
   imports =
     [ # Include the results of the hardware scan.
@@ -211,6 +210,9 @@
   environment.systemPackages = with pkgs; [
     vim
     webex
+    typora
+    postman
+
 
     # razer
     openrazer-daemon
