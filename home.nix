@@ -98,8 +98,8 @@
       "kwin"."Overview" = "Meta+W";
       "kwin"."Setup Window Shortcut" = [ ];
       "kwin"."Show Desktop" = "Meta+D";
-      "kwin"."Switch One Desktop Down" = "Ctrl+Alt+Down,Meta+Ctrl+Down,Switch One Desktop Down";
-      "kwin"."Switch One Desktop Up" = "Ctrl+Alt+Up,Meta+Ctrl+Up,Switch One Desktop Up";
+      "kwin"."Switch One Desktop Down" = "Ctrl+Alt+Down";
+      "kwin"."Switch One Desktop Up" = "Ctrl+Alt+Up";
       "kwin"."Switch One Desktop to the Left" = "Meta+Ctrl+Left";
       "kwin"."Switch One Desktop to the Right" = "Meta+Ctrl+Right";
       "kwin"."Switch Window Down" = "Meta+Alt+Down";
@@ -167,8 +167,8 @@
       "kwin"."Window Move Center" = [ ];
       "kwin"."Window No Border" = [ ];
       "kwin"."Window On All Desktops" = "F1,,Keep Window on All Desktops";
-      "kwin"."Window One Desktop Down" = "Ctrl+Alt+Shift+Down,Meta+Ctrl+Shift+Down,Window One Desktop Down";
-      "kwin"."Window One Desktop Up" = "Ctrl+Alt+Shift+Up,Meta+Ctrl+Shift+Up,Window One Desktop Up";
+      "kwin"."Window One Desktop Down" = "Ctrl+Alt+Shift+Down";
+      "kwin"."Window One Desktop Up" = "Ctrl+Alt+Shift+Up";
       "kwin"."Window One Desktop to the Left" = "Meta+Ctrl+Shift+Left";
       "kwin"."Window One Desktop to the Right" = "Meta+Ctrl+Shift+Right";
       "kwin"."Window One Screen Down" = [ ];
@@ -247,7 +247,7 @@
       "org_kde_powerdevil"."PowerOff" = "Power Off";
       "org_kde_powerdevil"."Sleep" = "Sleep";
       "org_kde_powerdevil"."Toggle Keyboard Backlight" = "Keyboard Light On/Off";
-      "org_kde_powerdevil"."Turn Off Screen" = [ ];
+      "org_kde_powerdevil"."Turn Off Screen" = "none";
       "org_kde_powerdevil"."powerProfile" = ["Battery" "Meta+B,Battery" "Meta+B,Switch Power Profile"];
       "plasmashell"."activate application launcher" = ["Meta" "Alt+F1,Meta" "Alt+F1,Activate Application Launcher"];
       "plasmashell"."activate task manager entry 1" = "Meta+1";
@@ -551,9 +551,9 @@
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."activityrule" = 2;
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."desktops" = "453a1516-206a-40c1-9b01-45e804ab8836";
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."desktopsrule" = 2;
-      "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."position" = "1075,0";
+      "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."position" = "1323,0";
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."positionrule" = 2;
-      "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."size" = "2367,1440";
+      "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."size" = "2119,1440";
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."sizerule" = 2;
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."title" = "Zoho Mail (mail@pahofmann.com)";
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."titlematch" = 2;
