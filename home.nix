@@ -593,8 +593,6 @@
       "spectaclerc"."Annotations"."annotationToolType" = 6;
       "spectaclerc"."GuiConfig"."captureDelay" = 2;
       "spectaclerc"."GuiConfig"."captureMode" = 0;
-      "spectaclerc"."ImageSave"."lastImageSaveAsLocation" = "file:///home/patrick/work-nextcloud/Finance/Belege/2025_02/Patrick/PERFORM_ESIM_CC.png";
-      "spectaclerc"."ImageSave"."lastImageSaveLocation" = "file:///home/patrick/Pictures/Screenshots/Screenshot_20250325_095329.png";
       "spectaclerc"."ImageSave"."translatedScreenshotsFolder" = "Screenshots";
       "spectaclerc"."VideoSave"."translatedScreencastsFolder" = "Screencasts";
     };
