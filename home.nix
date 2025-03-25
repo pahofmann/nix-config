@@ -495,13 +495,13 @@
       "kwinrulesrc"."General"."rules" = "a7abdee9-5089-43f6-853f-3bf76cae5f31,86dc4647-b437-4589-aa9d-6e9103212093,e3dee0fc-df27-44a5-92ba-a07ce2b29719,dfa51678-15a5-4797-aa68-e710240ff290,deb6e47f-c93b-43f0-a849-65962a43597a,3cf8c79b-7128-49b6-99e3-d296b840bc2f,0410fd2f-6fd4-4802-8383-fdca83c97e39,dd191b02-ea20-4fc8-aec5-cfe1f47b1fb2,0c01199b-9614-465d-8e66-a1e8c6ae5c87,bc3923b0-7e5f-495f-94b5-ca0254774331";
       "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."Description" = "Chrome - Main";
       "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."activity" = "156adec6-167e-45ff-96ba-05d283f6abb8";
-      "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."activityrule" = 2;
+      "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."activityrule" = 3;
       "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."desktops" = "f0e751e1-a3c9-4c0b-a319-6209a31638fd";
-      "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."desktopsrule" = 2;
+      "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."desktopsrule" = 3;
       "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."position" = "0,0";
-      "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."positionrule" = 2;
+      "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."positionrule" = 3;
       "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."size" = "2151,1440";
-      "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."sizerule" = 2;
+      "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."sizerule" = 3;
       "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."title" = "^(?!.*\\b(YouTube|Zoho)\\b).*Google Chrome.*$";
       "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."titlematch" = 3;
       "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."types" = 1;
