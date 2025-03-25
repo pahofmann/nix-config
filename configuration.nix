@@ -212,6 +212,7 @@
     webex
     typora
     postman
+    duf
 
 
     # razer

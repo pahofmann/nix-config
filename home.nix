@@ -12,6 +12,7 @@
       clock = ''${pkgs.tty-clock}/bin/tty-clock -B -c -C 4 -f "%a, %d %b"'';
       dadjoke = ''${pkgs.curlMinimal}/bin/curl --header "Accept: text/plain" https://icanhazdadjoke.com/'';
       dmesg = "${pkgs.util-linux}/bin/dmesg --human --color=always";
+      du = "duf";
       neofetch = "${pkgs.fastfetch}/bin/fastfetch";
       glow = "${pkgs.glow}/bin/glow --pager";
       hr = ''${pkgs.hr}/bin/hr "─━"'';
