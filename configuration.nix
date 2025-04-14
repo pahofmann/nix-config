@@ -287,7 +287,11 @@
     ethtool
     pciutils # lspci
     usbutils # lsusb
+    
+    # mounts
     cifs-utils
+    samba
+
   ];
 
   # Enable common container config files in /etc/containers
