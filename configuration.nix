@@ -294,6 +294,12 @@
 
   ];
 
+  # Mount homeassistant config
+  fileSystems."/mnt/ha-config" = {
+    device = "//192.168.2.100/config";
+    fsType = "cifs";
+    options = [ "cred=/home/patrick/.config/.smbcredentials" "vers=3.0" "x-systemd.automount" "noauto" ];
+  };
   # Enable common container config files in /etc/containers
   virtualisation.containers.enable = true;
   virtualisation = {
