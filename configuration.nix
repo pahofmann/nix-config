@@ -298,8 +298,9 @@
   fileSystems."/mnt/ha-config" = {
     device = "//192.168.2.100/config";
     fsType = "cifs";
-    options = [ "cred=/home/patrick/.config/.smbcredentials" "vers=3.0" "x-systemd.automount" "noauto" ];
+    options = [ "cred=/home/patrick/.config/.smbcredentials" "uid=1000" "gid=100" "file_mode=0660" "dir_mode=0770""vers=3.0" "x-systemd.automount" "noauto" ];
   };
+
   # Enable common container config files in /etc/containers
   virtualisation.containers.enable = true;
   virtualisation = {
