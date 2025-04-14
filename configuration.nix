@@ -91,11 +91,12 @@
     # Use the latest development drivers
     # package = config.boot.kernelPackages.nvidiaPackages.beta;
     package = config.boot.kernelPackages.nvidiaPackages.mkDriver {
-      version = "570.86.16"; # use new 570 drivers
-      sha256_64bit = "sha256-RWPqS7ZUJH9JEAWlfHLGdqrNlavhaR1xMyzs8lJhy9U=";
-      openSha256 = "sha256-DuVNA63+pJ8IB7Tw2gM4HbwlOh1bcDg2AN2mbEU9VPE=";
-      settingsSha256 = "sha256-9rtqh64TyhDF5fFAYiWl3oDHzKJqyOW3abpcf2iNRT8=";
-      usePersistenced = false;
+    version = "570.133.07";
+    sha256_64bit = "sha256-LUPmTFgb5e9VTemIixqpADfvbUX1QoTT2dztwI3E3CY=";
+    sha256_aarch64 = "sha256-yTovUno/1TkakemRlNpNB91U+V04ACTMwPEhDok7jI0=";
+    openSha256 = "sha256-9l8N83Spj0MccA8+8R1uqiXBS0Ag4JrLPjrU3TaXHnM=";
+    settingsSha256 = "sha256-XMk+FvTlGpMquM8aE8kgYK2PIEszUZD2+Zmj2OpYrzU=";
+    persistencedSha256 = "sha256-G1V7JtHQbfnSRfVjz/LE2fYTlh9okpCbE4dfX9oYSg8=";
     };
 
   };
@@ -218,8 +219,9 @@
 
 
     # razer
-    openrazer-daemon
-    polychromatic
+    # Disable openrazer till 3.10.1
+    #openrazer-daemon
+    #polychromatic
 
     # Elgato Streamdeck
     streamcontroller
@@ -303,7 +305,7 @@
   };
 
   # Razer hardware
-  hardware.openrazer.enable = true;
+  hardware.openrazer.enable = false;
 
   # Set the default editor to vim
   environment.variables.EDITOR = "vim";
