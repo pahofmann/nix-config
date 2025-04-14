@@ -213,6 +213,8 @@
     typora
     postman
     duf
+    gparted
+    parted
 
 
     # razer
@@ -283,6 +285,7 @@
     ethtool
     pciutils # lspci
     usbutils # lsusb
+    cifs-utils
   ];
 
   # Enable common container config files in /etc/containers
