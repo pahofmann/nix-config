@@ -555,10 +555,6 @@
     direnv
     kubectl
     kubernetes-helm
-
-    #3D printing
-    prusa-slicer
-
   ];
 
   # basic configuration of git, please change to your own

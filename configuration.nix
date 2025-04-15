@@ -2,8 +2,12 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, ... }:
+{ config, pkgs, inputs, pkgsUnstable, ... }:
 {
+  _module.args.pkgsUnstable = import inputs.nixpkgs-unstable {
+    inherit (pkgs.stdenv.hostPlatform) system;
+    inherit (config.nixpkgs) config;
+  };
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
@@ -216,7 +220,9 @@
     duf
     gparted
     parted
-
+    
+    # 3d printing
+    pkgsUnstable.prusa-slicer
 
     # razer
     # Disable openrazer till 3.10.1
