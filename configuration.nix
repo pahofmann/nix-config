@@ -223,6 +223,7 @@
     
     # 3d printing
     pkgsUnstable.prusa-slicer
+    orca-slicer
 
     # razer
     # Disable openrazer till 3.10.1
