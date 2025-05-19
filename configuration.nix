@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, inputs, pkgsUnstable, ... }:
+{ config, lib, pkgs, inputs, pkgsUnstable, ... }:
 {
   _module.args.pkgsUnstable = import inputs.nixpkgs-unstable {
     inherit (pkgs.stdenv.hostPlatform) system;
@@ -92,15 +92,18 @@
     # accessible via `nvidia-settings`.
     nvidiaSettings = true;
 
+    # Force full composition pipeline for smoother window operations
+    forceFullCompositionPipeline = true;
+
     # Use the latest development drivers
     # package = config.boot.kernelPackages.nvidiaPackages.beta;
     package = config.boot.kernelPackages.nvidiaPackages.mkDriver {
-    version = "570.133.07";
-    sha256_64bit = "sha256-LUPmTFgb5e9VTemIixqpADfvbUX1QoTT2dztwI3E3CY=";
-    sha256_aarch64 = "sha256-yTovUno/1TkakemRlNpNB91U+V04ACTMwPEhDok7jI0=";
-    openSha256 = "sha256-9l8N83Spj0MccA8+8R1uqiXBS0Ag4JrLPjrU3TaXHnM=";
-    settingsSha256 = "sha256-XMk+FvTlGpMquM8aE8kgYK2PIEszUZD2+Zmj2OpYrzU=";
-    persistencedSha256 = "sha256-G1V7JtHQbfnSRfVjz/LE2fYTlh9okpCbE4dfX9oYSg8=";
+      version = "570.144";
+      sha256_64bit = "sha256-wLjX7PLiC4N2dnS6uP7k0TI9xVWAJ02Ok0Y16JVfO+Y=";
+      sha256_aarch64 = "sha256-6kk2NLeKvG88QH7/YIrDXW4sgl324ddlAyTybvb0BP0=";
+      openSha256 = "sha256-9l8N83Spj0MccA8+8R1uqiXBS0Ag4JrLPjrU3TaXHnM=";
+      settingsSha256 = "sha256-XMk+FvTlGpMquM8aE8kgYK2PIEszUZD2+Zmj2OpYrzU=";
+      persistencedSha256 = "sha256-G1V7JtHQbfnSRfVjz/LE2fYTlh9okpCbE4dfX9oYSg8=";
     };
 
   };
@@ -110,10 +113,16 @@
   # You can disable this if you're only using the Wayland session.
   services.xserver.enable = true;
 
+  # Gnome
+  # services.xserver.displayManager.gdm.enable = true;
+  # services.xserver.desktopManager.gnome.enable = true;
+
   # Enable the KDE Plasma Desktop Environment.
   services.displayManager.sddm.wayland.enable = true;
   services.displayManager.sddm.enable = true;
   services.desktopManager.plasma6.enable = true;
+
+
 
   # Configure keymap in X11
   services.xserver.xkb = {
@@ -155,7 +164,7 @@
     # Mark as non-critical
     StartLimitBurst = 0;
     # Optional: you can also set a restart policy
-    Restart = "on-success";
+    Restart = "on-failure";
   };
 };
 
