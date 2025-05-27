@@ -552,7 +552,7 @@
 
     #communication
     signal-desktop
-    whatsapp-for-linux
+    whatsie
     teamspeak3
 
 
