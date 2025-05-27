@@ -243,8 +243,9 @@
       "kwinrulesrc"."0410fd2f-6fd4-4802-8383-fdca83c97e39"."positionrule" = 2;
       "kwinrulesrc"."0410fd2f-6fd4-4802-8383-fdca83c97e39"."size" = "1720,1440";
       "kwinrulesrc"."0410fd2f-6fd4-4802-8383-fdca83c97e39"."sizerule" = 2;
+      "kwinrulesrc"."0410fd2f-6fd4-4802-8383-fdca83c97e39"."title" = "WhatSie: WhatsApp";
       "kwinrulesrc"."0410fd2f-6fd4-4802-8383-fdca83c97e39"."types" = 1;
-      "kwinrulesrc"."0410fd2f-6fd4-4802-8383-fdca83c97e39"."wmclass" = "whatsapp-for-linux whatsapp-for-linux";
+      "kwinrulesrc"."0410fd2f-6fd4-4802-8383-fdca83c97e39"."wmclass" = "whatsie WhatSie";
       "kwinrulesrc"."0410fd2f-6fd4-4802-8383-fdca83c97e39"."wmclasscomplete" = true;
       "kwinrulesrc"."0410fd2f-6fd4-4802-8383-fdca83c97e39"."wmclassmatch" = 1;
       "kwinrulesrc"."0c01199b-9614-465d-8e66-a1e8c6ae5c87"."Description" = "Terminal";
