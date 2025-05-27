@@ -295,7 +295,6 @@
       "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."title" = "^(?!.*\\b(YouTube|Zoho)\\b).*Google Chrome.*$";
       "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."titlematch" = 3;
       "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."types" = 1;
-      "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."windowrole" = "browser";
       "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."wmclass" = "chrome google-chrome";
       "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."wmclasscomplete" = true;
       "kwinrulesrc"."a7abdee9-5089-43f6-853f-3bf76cae5f31"."wmclassmatch" = 1;
