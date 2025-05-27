@@ -558,7 +558,7 @@
     teamspeak3
 
 
-    yakuake
+    kdePackages.yakuake
     google-chrome
     citrix_workspace
     teams-for-linux
