@@ -347,8 +347,6 @@
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."title" = "Zoho Mail (mail@pahofmann.com)";
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."titlematch" = 2;
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."types" = 1;
-      "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."windowrole" = "browser";
-      "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."windowrolematch" = 1;
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."wmclass" = "chrome google-chrome";
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."wmclasscomplete" = true;
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."wmclassmatch" = 1;
