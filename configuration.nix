@@ -207,6 +207,9 @@
   # Install firefox.
   programs.firefox.enable = true;
 
+  # Flatpacks (for prusaslicer)
+  services.flatpak.enable = true;
+
   #steam
   programs.steam = {
     enable = true;
@@ -235,7 +238,6 @@
     k9s
     
     # 3d printing
-    pkgsUnstable.prusa-slicer
     orca-slicer
 
     # razer
