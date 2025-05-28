@@ -571,6 +571,18 @@
     kubernetes-helm
   ];
 
+  # Yakuake autostart
+    xdg.configFile."autostart/yakuake.desktop".text = ''
+    [Desktop Entry]
+    Type=Application
+    Exec=yakuake
+    Hidden=false
+    NoDisplay=false
+    X-GNOME-Autostart-enabled=true
+    Name=Yakuake
+    Comment=Startet Yakuake beim Login
+  '';
+
   # basic configuration of git, please change to your own
   programs.git = {
     enable = true;
