@@ -170,6 +170,21 @@
   };
 };
 
+systemd.services.disable-usb-wakeup = {
+  description = "Disable USB wakeup for selected devices";
+  wantedBy = [ "multi-user.target" ];
+  serviceConfig = {
+    Type = "oneshot";
+    ExecStart = ''
+      /bin/sh -c '
+      for dev in 1-5.1.1 1-5.1.4 1-5.1.6 1-5.3; do
+        echo disabled > /sys/bus/usb/devices/$dev/power/wakeup
+      done
+      '
+    '';
+  };
+};
+
   # Enable sound with pipewire.
   services.pulseaudio.enable = false;
   security.rtkit.enable = true;
@@ -228,7 +243,18 @@
   # $ nix search wget
   environment.systemPackages = with pkgs; [
     vim
-    webex
+    # Replace webex with a wrapped version that uses steam-run and X11
+    (pkgs.symlinkJoin {
+      name = "webex-x11";
+      paths = [ webex ];
+      buildInputs = [ makeWrapper ];
+      postBuild = ''
+        wrapProgram $out/bin/webex \
+          --set QT_QPA_PLATFORM xcb \
+          --prefix PATH : ${pkgs.steam-run}/bin \
+          --run 'export STEAM_RUN=1; exec ${pkgs.steam-run}/bin/steam-run "$0" "$@"'
+      '';
+    })
     typora
     postman
     duf
