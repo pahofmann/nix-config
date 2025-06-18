@@ -15,8 +15,19 @@
 
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
+  boot.loader.systemd-boot.editor = true;
+  boot.loader.systemd-boot.consoleMode = "max";
+  boot.loader.timeout = 10;
   boot.loader.efi.canTouchEfiVariables = true;
 
+  boot.kernelParams = [ 
+    "video.only_lcd=0"     # Use all displays, not just internal
+    "console=tty0"         # Use the first virtual console
+    "fbcon=map:0"          # Map the framebuffer to all displays
+    "video=DP-2:e"
+    "video=DP-3:e"
+  ];
+  
   # Limit the number of generations to keep
   boot.loader.systemd-boot.configurationLimit = 10;
 
