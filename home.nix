@@ -553,7 +553,7 @@
 
     #communication
     signal-desktop
-    whatsie
+    zapzap
     teamspeak3
 
 
