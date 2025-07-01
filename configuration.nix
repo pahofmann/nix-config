@@ -3,6 +3,24 @@
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
 { config, lib, pkgs, inputs, pkgsUnstable, ... }:
+
+# Webex wrapper and icon override
+let
+  webex = pkgs.webex; # if it exists in your nixpkgs
+  webexWrapped = pkgs.writeShellScriptBin "webex-wrapped" ''
+    export QT_QPA_PLATFORM=xcb
+    exec steam-run env LD_LIBRARY_PATH=${pkgs.xorg.libXScrnSaver}/lib:$LD_LIBRARY_PATH /run/current-system/sw/bin/webex "$@"
+  '';
+
+  webexOverride = webex.overrideAttrs (old: {
+    postInstall = ''
+      mkdir -p $out/share/applications
+      cp ${old.src}/webex.desktop $out/share/applications/
+      substituteInPlace $out/share/applications/webex.desktop --replace "Exec=webex" "Exec=webex-wrapped"
+      ${old.postInstall or ""}
+    '';
+  });
+in
 {
   _module.args.pkgsUnstable = import inputs.nixpkgs-unstable {
     inherit (pkgs.stdenv.hostPlatform) system;
@@ -17,6 +35,7 @@
   boot.loader.systemd-boot.enable = true;
   boot.loader.systemd-boot.editor = true;
   boot.loader.systemd-boot.consoleMode = "max";
+  boot.loader.systemd-boot.memtest86.enable = true;
   boot.loader.timeout = 10;
   boot.loader.efi.canTouchEfiVariables = true;
 
@@ -26,8 +45,10 @@
     "fbcon=map:0"          # Map the framebuffer to all displays
     "video=DP-2:e"
     "video=DP-3:e"
+    "nomodeset"
   ];
-  
+
+
   # Limit the number of generations to keep
   boot.loader.systemd-boot.configurationLimit = 10;
 
@@ -112,6 +133,7 @@
 
     # Use the latest development drivers
     # package = config.boot.kernelPackages.nvidiaPackages.beta;
+    # TILL this NVIDIA IS SUPPORTED 6.14 kernel is used, change when updating!
     package = config.boot.kernelPackages.nvidiaPackages.mkDriver {
       version = "575.51.02";
       sha256_64bit = "sha256-XZ0N8ISmoAC8p28DrGHk/YN1rJsInJ2dZNL8O+Tuaa0=";
@@ -250,22 +272,15 @@ systemd.services.disable-usb-wakeup = {
   # Enable the Flakes feature and the accompanying new nix command-line tool
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
+  # webex link:
+
+
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-    vim
-    # Replace webex with a wrapped version that uses steam-run and X11
-    (pkgs.symlinkJoin {
-      name = "webex-x11";
-      paths = [ webex ];
-      buildInputs = [ makeWrapper ];
-      postBuild = ''
-        wrapProgram $out/bin/webex \
-          --set QT_QPA_PLATFORM xcb \
-          --prefix PATH : ${pkgs.steam-run}/bin \
-          --run 'export STEAM_RUN=1; exec ${pkgs.steam-run}/bin/steam-run "$0" "$@"'
-      '';
-    })
+    vim   
+    webex
+    webexWrapped
     typora
     postman
     duf
