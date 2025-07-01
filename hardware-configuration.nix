@@ -12,7 +12,11 @@
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-amd" ];
   boot.extraModulePackages = [ ];
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+
+  # TILL NVIDIA IS SUPPORTED USE 6.14 kernel
+  #boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.kernelPackages = pkgs.linuxPackages_6_14;
+  
 
   fileSystems."/" =
     { device = "/dev/disk/by-uuid/02778606-98aa-4387-aa31-18aeb4c5824e";

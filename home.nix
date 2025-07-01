@@ -9,6 +9,7 @@
       k = "kubectl";
       brg = "${pkgs.bat-extras.batgrep}/bin/batgrep";
       cat = "${pkgs.bat}/bin/bat --paging=never";
+      catold = "/run/current-system/sw/bin/cat";
       clock = ''${pkgs.tty-clock}/bin/tty-clock -B -c -C 4 -f "%a, %d %b"'';
       dadjoke = ''${pkgs.curlMinimal}/bin/curl --header "Accept: text/plain" https://icanhazdadjoke.com/'';
       dmesg = "${pkgs.util-linux}/bin/dmesg --human --color=always";
