@@ -6,20 +6,12 @@
 
 # Webex wrapper and icon override
 let
-  webex = pkgs.webex; # if it exists in your nixpkgs
   webexWrapped = pkgs.writeShellScriptBin "webex-wrapped" ''
     export QT_QPA_PLATFORM=xcb
-    exec steam-run env LD_LIBRARY_PATH=${pkgs.xorg.libXScrnSaver}/lib:$LD_LIBRARY_PATH /run/current-system/sw/bin/webex "$@"
+    exec ${pkgs.steam-run}/bin/steam-run \
+      env LD_LIBRARY_PATH=${pkgs.xorg.libXScrnSaver}/lib:$LD_LIBRARY_PATH \
+      ${pkgs.webex}/bin/webex "$@"
   '';
-
-  webexOverride = webex.overrideAttrs (old: {
-    postInstall = ''
-      mkdir -p $out/share/applications
-      cp ${old.src}/webex.desktop $out/share/applications/
-      substituteInPlace $out/share/applications/webex.desktop --replace "Exec=webex" "Exec=webex-wrapped"
-      ${old.postInstall or ""}
-    '';
-  });
 in
 {
   _module.args.pkgsUnstable = import inputs.nixpkgs-unstable {
@@ -388,6 +380,18 @@ systemd.services.disable-usb-wakeup = {
       defaultNetwork.settings.dns_enabled = true;
     };
   };
+
+  # webex desktop entry
+  environment.etc."xdg/applications/webex-wrapped.desktop".text = ''
+  [Desktop Entry]
+  Name=Webex (Steam-run)
+  Comment=Launch Webex with workaround
+  Exec=${webexWrapped}/bin/webex-wrapped
+  Icon=/nix/store/766n3gh5kfxyddlpjlw13l1b4299ybj8-webex-45.2.0.31846/opt/Webex/bin/sparklogosmall.png
+  Terminal=false
+  Type=Application
+  Categories=Network;
+  '';
 
   # Razer hardware
   hardware.openrazer.enable = false;
