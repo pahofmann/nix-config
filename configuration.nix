@@ -381,18 +381,6 @@ systemd.services.disable-usb-wakeup = {
     };
   };
 
-  # webex desktop entry
-  environment.etc."xdg/applications/webex-wrapped.desktop".text = ''
-  [Desktop Entry]
-  Name=Webex (Steam-run)
-  Comment=Launch Webex with workaround
-  Exec=${webexWrapped}/bin/webex-wrapped
-  Icon=/nix/store/766n3gh5kfxyddlpjlw13l1b4299ybj8-webex-45.2.0.31846/opt/Webex/bin/sparklogosmall.png
-  Terminal=false
-  Type=Application
-  Categories=Network;
-  '';
-
   # Razer hardware
   hardware.openrazer.enable = false;
 

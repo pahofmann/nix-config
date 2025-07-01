@@ -1,8 +1,38 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   home.username = "patrick";
   home.homeDirectory = "/home/patrick";
+  
+  # Webex Desktop entry in correct place
+  home.file = {
+    ".local/share/icons/hicolor/48x48/apps/webex.png".source = 
+      "${pkgs.webex}/opt/Webex/bin/sparklogosmall.png";
+    ".local/share/icons/hicolor/64x64/apps/webex.png".source = 
+      "${pkgs.webex}/opt/Webex/bin/sparklogosmall.png";
+    ".local/share/icons/hicolor/128x128/apps/webex.png".source = 
+      "${pkgs.webex}/opt/Webex/bin/sparklogosmall.png";
+  };
+  home.file.".local/share/applications/webex.desktop".text = ''
+    [Desktop Entry]
+    Type=Application
+    Name=Webex
+    Comment=Cisco Webex
+    Exec=webex-wrapped %u
+    Icon=webex
+    Terminal=false
+    Categories=Network;VideoConference;
+    MimeType=x-scheme-handler/webex;x-scheme-handler/wbx;
+    StartupWMClass=Webex webex
+    X-GNOME-UsesNotifications=true
+    StartupNotify=true
+  '';
+
+  home.activation = {
+    updateIconCache = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      $DRY_RUN_CMD ${pkgs.gtk3}/bin/gtk-update-icon-cache $VERBOSE_ARG -t -f ~/.local/share/icons/hicolor
+    '';
+  };
   programs.fish = {
     enable = true;
     shellAliases = {
