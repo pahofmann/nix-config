@@ -302,8 +302,9 @@ systemd.services.disable-usb-wakeup = {
     # dynatrace
     terraform
 
-    kscreen
-    
+    #kvm problems
+    kdePackages.kscreen
+
     # archives
     zip
     xz
