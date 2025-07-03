@@ -302,8 +302,8 @@ systemd.services.disable-usb-wakeup = {
     # dynatrace
     terraform
 
-    way-displays
-
+    kscreen
+    
     # archives
     zip
     xz
