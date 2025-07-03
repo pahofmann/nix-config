@@ -299,6 +299,11 @@ systemd.services.disable-usb-wakeup = {
     podman-tui # status of containers in the terminal
     docker-compose # start group of containers for dev
 
+    # dynatrace
+    terraform
+
+    way-displays
+
     # archives
     zip
     xz
