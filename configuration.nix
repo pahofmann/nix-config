@@ -36,9 +36,9 @@ in
     enable = true;
     device = "nodev";
     efiSupport = true;
-    useOSProber = true;  # This will automatically detect Windows
-    default = "Windows 11";  # Set Windows as default
-    timeoutStyle = "menu";  # Always show the menu
+    useOSProber = true;
+    default = "Windows Boot Manager";
+    timeoutStyle = "menu";
     configurationLimit = 10;
   };
 
