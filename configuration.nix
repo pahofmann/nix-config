@@ -37,25 +37,13 @@ in
       efiSupport = true;
       useOSProber = true;
       configurationLimit = 10;
-      
-      # Set Windows as default with explicit index (0 is the first option)
-      default = "0";
+      # windows as default boot option
+      default = "2";
       
       # Always show menu for 5 seconds
       timeoutStyle = "menu";
       timeout = 5;
-      
-      # Simpler GRUB configuration to set Windows as default
-      extraConfig = ''
-        # Find Windows boot entry by its title and make it first in the list
-        for i in ''${!menu_entries[@]}; do
-          if echo "''${menu_entries[i]}" | grep -q "Windows"; then
-            set default="$i"
-            break
-          fi
-        done
-      '';
-    };
+
   };
 
   boot.kernelParams = [ 
