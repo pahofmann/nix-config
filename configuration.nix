@@ -22,24 +22,40 @@ in
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
     ];
-
-  # Bootloader.
-  # Disable systemd-boot
-  boot.loader.systemd-boot.enable = false;
   
   #Set HW clock for windows dual boot
   time.hardwareClockInLocalTime = true;
 
   # Enable GRUB2
-  boot.loader.efi.canTouchEfiVariables = true;
-  boot.loader.grub = {
-    enable = true;
-    device = "nodev";
-    efiSupport = true;
-    useOSProber = true;
-    default = "Windows Boot Manager";
-    timeoutStyle = "menu";
-    configurationLimit = 10;
+  boot.loader = {
+    systemd-boot.enable = false;
+    efi.canTouchEfiVariables = true;
+    
+    grub = {
+      enable = true;
+      device = "nodev";
+      efiSupport = true;
+      useOSProber = true;
+      configurationLimit = 10;
+      
+      # Set Windows as default with explicit index (0 is the first option)
+      default = "0";
+      
+      # Always show menu for 5 seconds
+      timeoutStyle = "menu";
+      timeout = 5;
+      
+      # Simpler GRUB configuration to set Windows as default
+      extraConfig = ''
+        # Find Windows boot entry by its title and make it first in the list
+        for i in ''${!menu_entries[@]}; do
+          if echo "''${menu_entries[i]}" | grep -q "Windows"; then
+            set default="$i"
+            break
+          fi
+        done
+      '';
+    };
   };
 
   boot.kernelParams = [ 
