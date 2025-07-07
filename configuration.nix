@@ -44,6 +44,7 @@ in
       timeoutStyle = "menu";
       timeout = 5;
 
+    };
   };
 
   boot.kernelParams = [ 
