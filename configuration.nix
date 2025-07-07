@@ -1,6 +1,6 @@
 # Edit this configuration file to define what should be installed on
-# your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
+# your system. Help is available in the configuration.nix(5) man page
+# and in the NixOS manual (accessible by running 'nixos-help').
 
 { config, lib, pkgs, inputs, pkgsUnstable, ... }:
 
@@ -24,12 +24,23 @@ in
     ];
 
   # Bootloader.
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.systemd-boot.editor = true;
-  boot.loader.systemd-boot.consoleMode = "max";
-  boot.loader.systemd-boot.memtest86.enable = true;
-  boot.loader.timeout = 10;
+  # Disable systemd-boot
+  boot.loader.systemd-boot.enable = false;
+  
+  #Set HW clock for windows dual boot
+  time.hardwareClockInLocalTime = true;
+
+  # Enable GRUB2
   boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader.grub = {
+    enable = true;
+    device = "nodev";
+    efiSupport = true;
+    useOSProber = true;  # This will automatically detect Windows
+    default = "Windows 11";  # Set Windows as default
+    timeoutStyle = "menu";  # Always show the menu
+    configurationLimit = 10;
+  };
 
   boot.kernelParams = [ 
     "video.only_lcd=0"     # Use all displays, not just internal
@@ -101,7 +112,7 @@ in
     # Enable this if you have graphical corruption issues or application crashes after waking
     # up from sleep. This fixes it by saving the entire VRAM memory to /tmp/ instead 
     # of just the bare essentials.
-    powerManagement.enable = true;
+    powerManagement.enable = false;
 
     # Fine-grained power management. Turns off GPU when not in use.
     # Experimental and only works on modern Nvidia GPUs (Turing or newer).
@@ -148,9 +159,7 @@ in
   services.displayManager.sddm.wayland.enable = true;
   services.displayManager.sddm.enable = true;
   services.desktopManager.plasma6.enable = true;
-
-
-
+  
   # Configure keymap in X11
   services.xserver.xkb = {
     layout = "eu";
