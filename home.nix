@@ -585,7 +585,8 @@
     #communication
     signal-desktop
     zapzap
-    teamspeak3
+    teamspeak6-client
+    discord
 
 
     kdePackages.yakuake
