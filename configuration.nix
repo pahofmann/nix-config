@@ -39,6 +39,9 @@ in
       configurationLimit = 10;
       # windows as default boot option
       default = "2";
+
+      #memtest
+      memtest86.enable = true;
       
       # Always show menu for 5 seconds
       timeoutStyle = "menu";
@@ -54,6 +57,10 @@ in
     "video=DP-2:e"
     "video=DP-3:e"
     "nomodeset"
+
+    # NVIDIA sleep/wake behavior fix
+    "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
+    "nvidia.NVreg_TemporaryFilePath=/var/tmp"
   ];
 
 
@@ -117,7 +124,7 @@ in
     # Enable this if you have graphical corruption issues or application crashes after waking
     # up from sleep. This fixes it by saving the entire VRAM memory to /tmp/ instead 
     # of just the bare essentials.
-    powerManagement.enable = false;
+    powerManagement.enable = true;
 
     # Fine-grained power management. Turns off GPU when not in use.
     # Experimental and only works on modern Nvidia GPUs (Turing or newer).
@@ -141,13 +148,14 @@ in
 
     # Use the latest development drivers
     # package = config.boot.kernelPackages.nvidiaPackages.beta;
-    # TILL this NVIDIA IS SUPPORTED 6.14 kernel is used, change when updating!
     package = config.boot.kernelPackages.nvidiaPackages.mkDriver {
-      version = "575.51.02";
-      sha256_64bit = "sha256-XZ0N8ISmoAC8p28DrGHk/YN1rJsInJ2dZNL8O+Tuaa0=";
-      openSha256 = "sha256-NQg+QDm9Gt+5bapbUO96UFsPnz1hG1dtEwT/g/vKHkw=";
-      settingsSha256 = "sha256-6n9mVkEL39wJj5FB1HBml7TTJhNAhS/j5hqpNGFQE4w=";
-      usePersistenced = false;
+      version = "570.172.08";
+      sha256_64bit = "sha256-AlaGfggsr5PXsl+nyOabMWBiqcbHLG4ij617I4xvoX0=";
+      sha256_aarch64 = "sha256-FVRyFvK1FKznckpatMMydmmQSkHK+41NkEjTybYJY9g=";
+      openSha256 = "sha256-aTV5J4zmEgRCOavo6wLwh5efOZUG+YtoeIT/tnrC1Hg=";
+      settingsSha256 = "sha256-N/1Ra8Teq93U3T898ImAT2DceHjDHZL1DuriJeTYEa4=";
+      persistencedSha256 = "sha256-x4K0Gp89LdL5YJhAI0AydMRxl6fyBylEnj+nokoBrK8=";
+    #  usePersistenced = false;
     };
   };
   
@@ -164,7 +172,9 @@ in
   services.displayManager.sddm.wayland.enable = true;
   services.displayManager.sddm.enable = true;
   services.desktopManager.plasma6.enable = true;
-  
+  services.xserver.displayManager.autoLogin.enable = true;
+  services.xserver.displayManager.autoLogin.user = "patrick";
+
   # Configure keymap in X11
   services.xserver.xkb = {
     layout = "eu";
@@ -209,20 +219,61 @@ in
   };
 };
 
+# No USB Wake from Sleep - Updated to include PCIe devices
 systemd.services.disable-usb-wakeup = {
-  description = "Disable USB wakeup for selected devices";
+  description = "Disable USB and PCIe wakeup for sleep issues";
   wantedBy = [ "multi-user.target" ];
   serviceConfig = {
     Type = "oneshot";
-    ExecStart = ''
-      /bin/sh -c '
-      for dev in 1-5.1.1 1-5.1.4 1-5.1.6 1-5.3; do
-        echo disabled > /sys/bus/usb/devices/$dev/power/wakeup
+    ExecStart = pkgs.writeShellScript "disable-wakeup" ''
+      # Disable the main USB controllers that are causing wake issues
+      for device in XHC0 XHC1 XHC2 GP17; do
+        if grep -q "^$device.*enabled" /proc/acpi/wakeup 2>/dev/null; then
+          echo "Disabling wakeup for $device"
+          echo "$device" > /proc/acpi/wakeup
+        fi
       done
-      '
+      
+      # Disable PCIe devices that can cause wake issues
+      for device in GPP0 GPP7 UP00 DP00 DP40 DP48 DP50 EP00 DP58 DP60 XH00 DP68; do
+        if grep -q "^$device.*enabled" /proc/acpi/wakeup 2>/dev/null; then
+          echo "Disabling wakeup for $device"
+          echo "$device" > /proc/acpi/wakeup
+        fi
+      done
     '';
   };
 };
+
+# Automatic updates for flatpack
+  systemd.services.flatpak-automatic-update = {
+    description = "Flatpak Automatic Update";
+    serviceConfig = {
+      Type = "oneshot";
+      # Define ExecStart only once, with notification support
+      ExecStart = "${pkgs.writeShellScript "flatpak-update-notify" ''
+        if ${pkgs.flatpak}/bin/flatpak update -y; then
+          ${pkgs.libnotify}/bin/notify-send "Flatpak Updates" "All Flatpak applications have been updated successfully." -i system-software-update
+        else
+          ${pkgs.libnotify}/bin/notify-send "Flatpak Updates" "Some Flatpak updates failed. Check the system logs for details." -i dialog-error
+        fi
+      ''}";
+      User = "root";  # Needed for system-wide Flatpaks
+    };
+    wants = [ "network-online.target" ];
+    after = [ "network-online.target" ];
+  };
+
+  # Schedule the Flatpak update service to run daily
+  systemd.timers.flatpak-automatic-update = {
+    description = "Timer for Flatpak Automatic Update";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "daily";  # Run once per day
+      Persistent = true;     # Run immediately if last run was missed
+      RandomizedDelaySec = "1h";  # Add randomized delay to avoid load spikes
+    };
+  };
 
   # Enable sound with pipewire.
   services.pulseaudio.enable = false;
