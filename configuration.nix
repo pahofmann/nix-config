@@ -245,8 +245,8 @@ systemd.services.disable-usb-wakeup = {
   };
 };
 
-# Automatic updates for flatpack
   systemd.services.flatpak-automatic-update = {
+# Automatic updates for flatpack
     description = "Flatpak Automatic Update";
     serviceConfig = {
       Type = "oneshot";
@@ -348,6 +348,9 @@ systemd.services.disable-usb-wakeup = {
     
     # 3d printing
     orca-slicer
+
+    # PDFS
+    xournalpp
 
     # razer
     # Disable openrazer till 3.10.1
