@@ -354,8 +354,8 @@ systemd.services.disable-usb-wakeup = {
 
     # razer
     # Disable openrazer till 3.10.1
-    #openrazer-daemon
-    #polychromatic
+    openrazer-daemon
+    polychromatic
 
     # Elgato Streamdeck
     streamcontroller
