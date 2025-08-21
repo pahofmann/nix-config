@@ -56,7 +56,6 @@ in
     "fbcon=map:0"          # Map the framebuffer to all displays
     "video=DP-2:e"
     "video=DP-3:e"
-    "nomodeset"
 
     # NVIDIA sleep/wake behavior fix
     "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
