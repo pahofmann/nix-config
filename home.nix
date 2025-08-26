@@ -587,6 +587,7 @@
     "Xcursor.size" = 16;
     "Xft.dpi" = 172;
   };
+  programs.vscode.enable = true;
 
   # Packages that should be installed to the user profile.
   home.packages = with pkgs; [
@@ -607,7 +608,6 @@
     nextcloud-client
 
     #dev
-    vscode-fhs
     direnv
     kubectl
     kubernetes-helm
