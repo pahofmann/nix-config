@@ -90,6 +90,15 @@
       "kwin"."Window On All Desktops" = "F1";
       "kwin"."Window One Desktop Down" = "Ctrl+Alt+Shift+Down";
       "kwin"."Window One Desktop Up" = "Ctrl+Alt+Shift+Up";
+      "kwin"."Switch to Desktop 1" = "Ctrl+Alt+Num+1";
+      "kwin"."Switch to Desktop 2" = "Ctrl+Alt+Num+2";
+      "kwin"."Switch to Desktop 3" = "Ctrl+Alt+Num+3";
+      "kwin"."Switch to Desktop 4" = "Ctrl+Alt+Num+4";
+      "kwin"."Switch to Desktop 5" = "Ctrl+Alt+Num+5";
+      "kwin"."Switch to Desktop 6" = "Ctrl+Alt+Num+6";
+      "kwin"."Switch to Desktop 7" = "Ctrl+Alt+Num+7";
+      "kwin"."Switch to Desktop 8" = "Ctrl+Alt+Num+8";
+      "kwin"."Switch to Desktop 9" = "Ctrl+Alt+Num+9";
     };
     configFile = {
       "baloofilerc"."Basic Settings"."Indexing-Enabled" = false;
