@@ -611,6 +611,9 @@
     direnv
     kubectl
     kubernetes-helm
+
+    #printing
+    pdfarranger
   ];
 
   # Yakuake autostart
