@@ -601,7 +601,6 @@
 
 
     kdePackages.yakuake
-    google-chrome
     citrix_workspace
     teams-for-linux
     pass # secret management
@@ -640,6 +639,14 @@
       init.defaultBranch = "main";
       user.signingkey = "C992EF803666696D";
     };
+  };
+
+  programs.google-chrome = {
+    enable = true;
+    commandLineArgs = [
+      "--enable-features=ExtensionsManifestV2Availability"
+      "--enable-features=ExtensionsManifestV2Override"
+    ];
   };
 
   # alacritty - a cross-platform, GPU-accelerated terminal emulator
