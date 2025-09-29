@@ -361,6 +361,7 @@ systemd.services.disable-usb-wakeup = {
 
     # Elgato Streamdeck
     streamcontroller
+    kdotool
 
     gnupg
     pinentry
