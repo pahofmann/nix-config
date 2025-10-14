@@ -30,6 +30,7 @@ in
   boot.loader = {
     systemd-boot.enable = false;
     efi.canTouchEfiVariables = true;
+    timeout = 5;
     
     grub = {
       enable = true;
@@ -42,11 +43,8 @@ in
 
       #memtest
       memtest86.enable = true;
-      
-      # Always show menu for 5 seconds
-      timeoutStyle = "menu";
-      timeout = 5;
 
+      timeoutStyle = "menu";
     };
   };
 
@@ -326,10 +324,9 @@ systemd.services.disable-usb-wakeup = {
   nixpkgs.config.allowUnfree = true;
 
   # Enable the Flakes feature and the accompanying new nix command-line tool
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
-
-  # webex link:
-
+  nix.settings = { 
+    experimental-features = [ "nix-command" "flakes" ];
+  };
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
@@ -344,6 +341,7 @@ systemd.services.disable-usb-wakeup = {
     parted
     tmux
     k9s
+    gdu
     
     # 3d printing
     orca-slicer
