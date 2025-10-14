@@ -37,7 +37,7 @@
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
           home-manager.users.patrick = import ./home.nix;
-          home-manager.sharedModules = [ plasma-manager.homeManagerModules.plasma-manager ];
+          home-manager.sharedModules = [ plasma-manager.homeModules.plasma-manager ];
 
           # Optionally, use home-manager.extraSpecialArgs to pass arguments to home.nix
           }
