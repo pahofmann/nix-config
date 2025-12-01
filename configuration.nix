@@ -147,12 +147,11 @@ in
     #package = config.boot.kernelPackages.nvidiaPackages.stable;
     # Force a newer driver that fixes the Xid 69 crashes
     package = config.boot.kernelPackages.nvidiaPackages.mkDriver {
-      version = "575.64.05";
-      sha256_64bit = "sha256-hfK1D5EiYcGRegss9+H5dDr/0Aj9wPIJ9NVWP3dNUC0=";
-      sha256_aarch64 = "sha256-GRE9VEEosbY7TL4HPFoyo0Ac5jgBHsZg9sBKJ4BLhsA=";
-      openSha256 = "sha256-mcbMVEyRxNyRrohgwWNylu45vIqF+flKHnmt47R//KU=";
-      settingsSha256 = "sha256-o2zUnYFUQjHOcCrB0w/4L6xI1hVUXLAWgG2Y26BowBE=";
-      persistencedSha256 = "sha256-2g5z7Pu8u2EiAh5givP5Q1Y4zk4Cbb06W37rf768NFU=";
+      version = "580.105.08";
+      sha256_64bit = "sha256-2cboGIZy8+t03QTPpp3VhHn6HQFiyMKMjRdiV2MpNHU=";
+      openSha256 = "sha256-FGmMt3ShQrw4q6wsk8DSvm96ie5yELoDFYinSlGZcwQ=";
+      settingsSha256 = "sha256-YvzWO1U3am4Nt5cQ+b5IJ23yeWx5ud1HCu1U0KoojLY=";
+      persistencedSha256 = "sha256-qh8pKGxUjEimCgwH7q91IV7wdPyV5v5dc5/K/IcbruI=";
     };
   };
   
@@ -352,6 +351,9 @@ systemd.services.disable-usb-wakeup = {
     # dev
     bruno
 
+    #office
+    onlyoffice-bin
+
     # razer
     # Disable openrazer till 3.10.1
     openrazer-daemon
@@ -360,6 +362,9 @@ systemd.services.disable-usb-wakeup = {
     # Elgato Streamdeck
     streamcontroller
     kdotool
+
+    # Video editing
+    kdePackages.kdenlive
 
     gnupg
     pinentry
