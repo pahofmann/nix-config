@@ -646,6 +646,8 @@
     commandLineArgs = [
       "--enable-features=ExtensionsManifestV2Availability"
       "--enable-features=ExtensionsManifestV2Override"
+      "--disable-features=ExtensionManifestV2Unsupported,ExtensionManifestV2Disabled"
+      
     ];
   };
 
