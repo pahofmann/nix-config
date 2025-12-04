@@ -28,6 +28,12 @@
       options = [ "fmask=0077" "dmask=0077" ];
     };
 
+  fileSystems."/run/media/patrick/bigd" =
+    { device = "/dev/disk/by-uuid/33ba122d-5508-4ca3-a098-59bff8feb27b";
+      fsType = "auto";
+      options = [ "noatime" "nosuid" "nodev" "user" "noauto" ];
+    };
+
   swapDevices = [ ];
 
   # Enables DHCP on each ethernet and wireless interface. In case of scripted networking
