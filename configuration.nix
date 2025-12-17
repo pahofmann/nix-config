@@ -438,6 +438,17 @@ systemd.services.disable-usb-wakeup = {
     cifs-utils
     samba
 
+    #BAR dependencies
+    
+    SDL2
+    openal
+    alsa-lib
+    gtk3
+    nss
+    binutils
+    fuse2
+    openal
+
   ];
 
   # Mount homeassistant config
