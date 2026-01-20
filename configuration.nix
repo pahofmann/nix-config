@@ -319,6 +319,9 @@ systemd.services.disable-usb-wakeup = {
     localNetworkGameTransfers.openFirewall = true; # Open ports in the firewall for Steam Local Network Game Transfers
   };
 
+  # Home Manager
+  programs.kdeconnect.enable = true;
+
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
