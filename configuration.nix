@@ -319,6 +319,29 @@ systemd.services.disable-usb-wakeup = {
     dedicatedServer.openFirewall = true; # Open ports in the firewall for Source Dedicated Server
     localNetworkGameTransfers.openFirewall = true; # Open ports in the firewall for Steam Local Network Game Transfers
   };
+  
+  # steam gamescope dependencies
+  nixpkgs.config.packageOverrides = pkgs: {
+    steam = pkgs.steam.override {
+      extraPkgs = pkgs: with pkgs; [
+        xorg.libXcursor
+        xorg.libXi
+        xorg.libXinerama
+        xorg.libXScrnSaver
+        libpng
+        libpulseaudio
+        libvorbis
+        stdenv.cc.cc.lib
+        libkrb5
+        keyutils
+      ];
+    };
+  };
+
+  # gamescope
+  programs.gamescope = {
+  enable = true;
+  };
 
   # Home Manager
   programs.kdeconnect.enable = true;
@@ -445,13 +468,22 @@ systemd.services.disable-usb-wakeup = {
     # gaming overlay
     mangohud
 
+    gamescope-wsi
+
   ];
 
   # Mount homeassistant config
   fileSystems."/mnt/ha-config" = {
     device = "//192.168.2.100/config";
     fsType = "cifs";
-    options = [ "cred=/home/patrick/.config/.smbcredentials" "uid=1000" "gid=100" "file_mode=0660" "dir_mode=0770""vers=3.0" "x-systemd.automount" "noauto" ];
+    options = [ "credentials=/home/patrick/.config/.smbcredentials" "uid=1000" "gid=100" "file_mode=0660" "dir_mode=0770" "vers=3.0" "x-systemd.automount" "noauto" ];
+  };
+
+  # Mount nas
+  fileSystems."/mnt/media" = {
+    device = "//192.168.2.10/media";
+    fsType = "cifs";
+    options = [ "credentials=/home/patrick/.config/.smbcredentials-media" "uid=1000" "gid=100" "file_mode=0660" "dir_mode=0770" "vers=3.1.1" "x-systemd.automount" "noauto" ];
   };
 
   # Enable common container config files in /etc/containers

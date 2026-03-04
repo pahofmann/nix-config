@@ -305,7 +305,7 @@
       "kwinrulesrc"."3cf8c79b-7128-49b6-99e3-d296b840bc2f"."size" = "1720,1440";
       "kwinrulesrc"."3cf8c79b-7128-49b6-99e3-d296b840bc2f"."sizerule" = 2;
       "kwinrulesrc"."3cf8c79b-7128-49b6-99e3-d296b840bc2f"."types" = 1;
-      "kwinrulesrc"."3cf8c79b-7128-49b6-99e3-d296b840bc2f"."wmclass" = "signal Signal";
+      "kwinrulesrc"."3cf8c79b-7128-49b6-99e3-d296b840bc2f"."wmclass" = "electron Signal";
       "kwinrulesrc"."3cf8c79b-7128-49b6-99e3-d296b840bc2f"."wmclasscomplete" = true;
       "kwinrulesrc"."3cf8c79b-7128-49b6-99e3-d296b840bc2f"."wmclassmatch" = 1;
       "kwinrulesrc"."86dc4647-b437-4589-aa9d-6e9103212093"."Description" = "YouTube";
