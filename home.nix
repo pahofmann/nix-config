@@ -1,4 +1,14 @@
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, inputs, ... }:
+
+let
+  pkgsUnstable = import inputs.nixpkgs-unstable {
+    inherit (pkgs.stdenv.hostPlatform) system;
+    config = {
+      allowUnfree = true;
+      permittedInsecurePackages = [ "libsoup-2.74.3" ];
+    };
+  };
+in
 
 {
   home.username = "patrick";
@@ -49,7 +59,6 @@
       hr = ''${pkgs.hr}/bin/hr "─━"'';
       htop = "${pkgs.bottom}/bin/btm --basic --tree --hide_table_gap --dot_marker";
       less = "${pkgs.bat}/bin/bat";
-      lm = "${pkgs.lima-bin}/bin/limactl";
       lolcat = "${pkgs.dotacat}/bin/dotacat";
       moon = "${pkgs.curlMinimal}/bin/curl -s wttr.in/Moon";
       more = "${pkgs.bat}/bin/bat";
@@ -601,7 +610,7 @@
 
 
     kdePackages.yakuake
-    citrix_workspace
+    pkgsUnstable.citrix_workspace
     teams-for-linux
     pass # secret management
     nextcloud-client
@@ -630,9 +639,9 @@
   # basic configuration of git, please change to your own
   programs.git = {
     enable = true;
-    userName = "Patrick Hofmann";
-    userEmail = "git@hfmnn.com";
-    extraConfig = {
+    settings = {
+      user.name = "Patrick Hofmann";
+      user.email = "git@hfmnn.com";
       # Sign all commits using ssh key
       commit.gpgsign = true;
       tag.gpgSign = true;
