@@ -147,12 +147,12 @@ in
     #package = config.boot.kernelPackages.nvidiaPackages.stable;
     # Force a newer driver that fixes the Xid 69 crashes
     package = config.boot.kernelPackages.nvidiaPackages.mkDriver {
-      version = "590.48.01";
-      sha256_64bit = "sha256-ueL4BpN4FDHMh/TNKRCeEz3Oy1ClDWto1LO/LWlr1ok=";
-      sha256_aarch64 = "sha256-FOz7f6pW1NGM2f74kbP6LbNijxKj5ZtZ08bm0aC+/YA=";
-      openSha256 = "sha256-hECHfguzwduEfPo5pCDjWE/MjtRDhINVr4b1awFdP44=";
-      settingsSha256 = "sha256-NWsqUciPa4f1ZX6f0By3yScz3pqKJV1ei9GvOF8qIEE=";
-      persistencedSha256 = "sha256-wsNeuw7IaY6Qc/i/AzT/4N82lPjkwfrhxidKWUtcwW8=";
+      version = "595.58.03";
+      sha256_64bit = "sha256-jA1Plnt5MsSrVxQnKu6BAzkrCnAskq+lVRdtNiBYKfk=";
+      sha256_aarch64 = "sha256-hzzIKY1Te8QkCBWR+H5k1FB/HK1UgGhai6cl3wEaPT8=";
+      openSha256 = "sha256-6LvJyT0cMXGS290Dh8hd9rc+nYZqBzDIlItOFk8S4n8=";
+      settingsSha256 = "sha256-2vLF5Evl2D6tRQJo0uUyY3tpWqjvJQ0/Rpxan3NOD3c=";
+      persistencedSha256 = "sha256-AtjM/ml/ngZil8DMYNH+P111ohuk9mWw5t4z7CHjPWw=";
     };
   };
   
@@ -169,8 +169,8 @@ in
   services.displayManager.sddm.wayland.enable = true;
   services.displayManager.sddm.enable = true;
   services.desktopManager.plasma6.enable = true;
-  services.xserver.displayManager.autoLogin.enable = false;
-  services.xserver.displayManager.autoLogin.user = "patrick";
+  services.displayManager.autoLogin.enable = false;
+  services.displayManager.autoLogin.user = "patrick";
 
   # Configure keymap in X11
   services.xserver.xkb = {
@@ -348,6 +348,10 @@ systemd.services.disable-usb-wakeup = {
 
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
+  nixpkgs.config.permittedInsecurePackages = [
+    # Citrix Workspace still depends on libsoup 2 on 25.11.
+    "libsoup-2.74.3"
+  ];
 
   # Enable the Flakes feature and the accompanying new nix command-line tool
   nix.settings = { 
@@ -379,7 +383,7 @@ systemd.services.disable-usb-wakeup = {
     bruno
 
     #office
-    onlyoffice-bin
+    onlyoffice-desktopeditors
 
     # razer
     # Disable openrazer till 3.10.1
@@ -394,7 +398,7 @@ systemd.services.disable-usb-wakeup = {
     kdePackages.kdenlive
 
     gnupg
-    pinentry
+    pinentry-qt
 
     dive # look into docker image layers
     podman-tui # status of containers in the terminal
