@@ -351,6 +351,7 @@ systemd.services.disable-usb-wakeup = {
   nixpkgs.config.permittedInsecurePackages = [
     # Citrix Workspace still depends on libsoup 2 on 25.11.
     "libsoup-2.74.3"
+    "qtwebengine-5.15.19"
   ];
 
   # Enable the Flakes feature and the accompanying new nix command-line tool
