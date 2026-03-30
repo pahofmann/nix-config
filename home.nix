@@ -596,7 +596,10 @@ in
     "Xcursor.size" = 16;
     "Xft.dpi" = 172;
   };
-  programs.vscode.enable = true;
+  programs.vscode = {
+    enable = true;
+    package = pkgsUnstable.vscode;
+  };
 
   # Packages that should be installed to the user profile.
   home.packages = with pkgs; [
