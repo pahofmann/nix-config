@@ -5,7 +5,10 @@ let
     inherit (pkgs.stdenv.hostPlatform) system;
     config = {
       allowUnfree = true;
-      permittedInsecurePackages = [ "libsoup-2.74.3" ];
+      permittedInsecurePackages = [ 
+        "libsoup-2.74.3"
+        "qtwebengine-5.15.19"
+      ];
     };
   };
 in
@@ -607,7 +610,7 @@ in
 
     #communication
     signal-desktop
-    zapzap
+    whatsie
     teamspeak6-client
     discord
 
