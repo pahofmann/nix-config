@@ -20,29 +20,32 @@
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, plasma-manager, ... }@inputs: {
-    # Please replace my-nixos with your hostname
-    nixosConfigurations.nixtop = nixpkgs.lib.nixosSystem {
-      specialArgs = { inherit inputs; };
+  outputs = { self, nixpkgs, home-manager, plasma-manager, ... }@inputs:
+    let
       system = "x86_64-linux";
-      modules = [
-        # Import the previous configuration.nix we used,
-        # so the old configuration file still takes effect
-        ./configuration.nix
+    in {
+      # Please replace my-nixos with your hostname
+      nixosConfigurations.nixtop = nixpkgs.lib.nixosSystem {
+        inherit system;
+        specialArgs = { inherit inputs system; };
+        modules = [
+          # Import the previous configuration.nix we used,
+          # so the old configuration file still takes effect
+          ./configuration.nix
 
-        # make home-manager as a module of nixos
-        # so that home-manager configuration will be deployed automatically when executing `nixos-rebuild switch`
-        home-manager.nixosModules.home-manager
-        {
-          home-manager.useGlobalPkgs = true;
-          home-manager.useUserPackages = true;
-          home-manager.extraSpecialArgs = { inherit inputs; };
-          home-manager.users.patrick = import ./home.nix;
-          home-manager.sharedModules = [ plasma-manager.homeModules.plasma-manager ];
+          # make home-manager as a module of nixos
+          # so that home-manager configuration will be deployed automatically when executing `nixos-rebuild switch`
+          home-manager.nixosModules.home-manager
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+            home-manager.extraSpecialArgs = { inherit inputs system; };
+            home-manager.users.patrick = import ./home.nix;
+            home-manager.sharedModules = [ plasma-manager.homeModules.plasma-manager ];
 
-          # Optionally, use home-manager.extraSpecialArgs to pass arguments to home.nix
-          }
-      ];
+            # Optionally, use home-manager.extraSpecialArgs to pass arguments to home.nix
+            }
+        ];
+      };
     };
-  };
 }

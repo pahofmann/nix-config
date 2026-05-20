@@ -7,7 +7,6 @@ let
       allowUnfree = true;
       permittedInsecurePackages = [ 
         "libsoup-2.74.3"
-        "qtwebengine-5.15.19"
       ];
     };
   };
@@ -25,6 +24,17 @@ in
       "${pkgs.webex}/opt/Webex/bin/sparklogosmall.png";
     ".local/share/icons/hicolor/128x128/apps/webex.png".source = 
       "${pkgs.webex}/opt/Webex/bin/sparklogosmall.png";
+    ".config/plasma-workspace/env/10-import-session-env.sh" = {
+      executable = true;
+      text = ''
+        # Keep systemd/dbus app launches aligned with the live Plasma session.
+        if [ -n "$DISPLAY" ] || [ -n "$WAYLAND_DISPLAY" ]; then
+          ${pkgs.dbus}/bin/dbus-update-activation-environment --systemd \
+            DISPLAY WAYLAND_DISPLAY XAUTHORITY \
+            XDG_CURRENT_DESKTOP XDG_SESSION_TYPE DBUS_SESSION_BUS_ADDRESS
+        fi
+      '';
+    };
   };
   home.file.".local/share/applications/webex.desktop".text = ''
     [Desktop Entry]
@@ -610,7 +620,6 @@ in
 
     #communication
     signal-desktop
-    whatsie
     teamspeak6-client
     discord
 

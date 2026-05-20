@@ -28,18 +28,18 @@
       options = [ "fmask=0077" "dmask=0077" ];
     };
 
-  # External drive mount (mounted as user patrick)
-  fileSystems."/run/media/patrick/bigd" =
-    { device = "/dev/disk/by-label/bigd";
-      fsType = "ntfs-3g";
-      options = [ 
-        "rw"
-        "noatime" 
-        "uid=1000"      
-        "gid=100"
-        "umask=0022"
-      ];
-    };
+  # # External drive mount (mounted as user patrick)
+  # fileSystems."/run/media/patrick/bigd" =
+  #   { device = "/dev/disk/by-label/bigd";
+  #     fsType = "ntfs-3g";
+  #     options = [ 
+  #       "rw"
+  #       "noatime" 
+  #       "uid=1000"      
+  #       "gid=100"
+  #       "umask=0022"
+  #     ];
+  #   };
 
   swapDevices = [ ];
 
