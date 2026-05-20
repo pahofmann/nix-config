@@ -2,7 +2,7 @@
 # your system. Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running 'nixos-help').
 
-{ config, lib, pkgs, inputs, pkgsUnstable, ... }:
+{ config, lib, pkgs, inputs, pkgsUnstable, system, ... }:
 
 # Webex wrapper and icon override
 let
@@ -14,6 +14,7 @@ let
   '';
 in
 {
+  
   _module.args.pkgsUnstable = import inputs.nixpkgs-unstable {
     inherit (pkgs.stdenv.hostPlatform) system;
     inherit (config.nixpkgs) config;
@@ -67,9 +68,10 @@ in
   # Perform garbage collection weekly to maintain low disk usage
   nix.gc = {
     automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 1w";
+    dates = "daily";
+    options = "--delete-older-than 7d";
   };
+  nix.optimise.automatic = true;
 
   networking.hostName = "nixtop"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
@@ -147,12 +149,12 @@ in
     #package = config.boot.kernelPackages.nvidiaPackages.stable;
     # Force a newer driver that fixes the Xid 69 crashes
     package = config.boot.kernelPackages.nvidiaPackages.mkDriver {
-      version = "595.58.03";
-      sha256_64bit = "sha256-jA1Plnt5MsSrVxQnKu6BAzkrCnAskq+lVRdtNiBYKfk=";
-      sha256_aarch64 = "sha256-hzzIKY1Te8QkCBWR+H5k1FB/HK1UgGhai6cl3wEaPT8=";
-      openSha256 = "sha256-6LvJyT0cMXGS290Dh8hd9rc+nYZqBzDIlItOFk8S4n8=";
-      settingsSha256 = "sha256-2vLF5Evl2D6tRQJo0uUyY3tpWqjvJQ0/Rpxan3NOD3c=";
-      persistencedSha256 = "sha256-AtjM/ml/ngZil8DMYNH+P111ohuk9mWw5t4z7CHjPWw=";
+      version = "595.71.05";
+      sha256_64bit = "sha256-NiA7iWC35JyKQva6H1hjzeNKBek9KyS3mK8G3YRva4I=";
+      sha256_aarch64 = "sha256-XzKloS00dFKTd4ATWkTIhm9eG/OzR/Sim6MboNZWPu8=";
+      openSha256 = "sha256-Lfz71QWKM6x/jD2B22SWpUi7/og30HRlXg1kL3EWzEw=";
+      settingsSha256 = "sha256-mXnf3jyvznfB3OfKd657rxv0rYHQb/dX/Riw/+N9EKU=";
+      persistencedSha256 = "sha256-Z/6IvEEa/XfZ5F5qoSIPvXJLGtscYVqjFxHZaN/M2Ts=";
     };
   };
   
@@ -351,7 +353,6 @@ systemd.services.disable-usb-wakeup = {
   nixpkgs.config.permittedInsecurePackages = [
     # Citrix Workspace still depends on libsoup 2 on 25.11.
     "libsoup-2.74.3"
-    "qtwebengine-5.15.19"
   ];
 
   # Enable the Flakes feature and the accompanying new nix command-line tool
@@ -513,6 +514,9 @@ systemd.services.disable-usb-wakeup = {
   environment.variables = {
     LC_ALL = "en_US.UTF-8";
   };
+  systemd.tmpfiles.rules = [
+    "d /tmp/.X11-unix 1777 root root -"
+  ];
 
   #bluetooth
   hardware.bluetooth = {
