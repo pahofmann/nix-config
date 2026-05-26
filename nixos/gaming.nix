@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, inputs, ... }:
 
 {
   programs.gamemode.enable = true;
@@ -8,6 +8,9 @@
     remotePlay.openFirewall = true;
     dedicatedServer.openFirewall = true;
     localNetworkGameTransfers.openFirewall = true;
+    extraCompatPackages = [
+      inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.proton-cachyos-slr
+    ];
   };
 
   nixpkgs.config.packageOverrides = pkgs: {
