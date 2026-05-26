@@ -305,9 +305,8 @@ in
       "kwinrulesrc"."0410fd2f-6fd4-4802-8383-fdca83c97e39"."positionrule" = 2;
       "kwinrulesrc"."0410fd2f-6fd4-4802-8383-fdca83c97e39"."size" = "1720,1440";
       "kwinrulesrc"."0410fd2f-6fd4-4802-8383-fdca83c97e39"."sizerule" = 2;
-      "kwinrulesrc"."0410fd2f-6fd4-4802-8383-fdca83c97e39"."title" = "WhatSie: WhatsApp";
+      "kwinrulesrc"."0410fd2f-6fd4-4802-8383-fdca83c97e39"."title" = "WhatsApp Web";
       "kwinrulesrc"."0410fd2f-6fd4-4802-8383-fdca83c97e39"."types" = 1;
-      "kwinrulesrc"."0410fd2f-6fd4-4802-8383-fdca83c97e39"."wmclass" = "whatsie WhatSie";
       "kwinrulesrc"."0410fd2f-6fd4-4802-8383-fdca83c97e39"."wmclasscomplete" = true;
       "kwinrulesrc"."0410fd2f-6fd4-4802-8383-fdca83c97e39"."wmclassmatch" = 1;
       "kwinrulesrc"."0c01199b-9614-465d-8e66-a1e8c6ae5c87"."Description" = "Terminal";
@@ -327,7 +326,7 @@ in
       "kwinrulesrc"."3cf8c79b-7128-49b6-99e3-d296b840bc2f"."size" = "1720,1440";
       "kwinrulesrc"."3cf8c79b-7128-49b6-99e3-d296b840bc2f"."sizerule" = 2;
       "kwinrulesrc"."3cf8c79b-7128-49b6-99e3-d296b840bc2f"."types" = 1;
-      "kwinrulesrc"."3cf8c79b-7128-49b6-99e3-d296b840bc2f"."wmclass" = "electron Signal";
+      "kwinrulesrc"."3cf8c79b-7128-49b6-99e3-d296b840bc2f"."wmclass" = "electron signal";
       "kwinrulesrc"."3cf8c79b-7128-49b6-99e3-d296b840bc2f"."wmclasscomplete" = true;
       "kwinrulesrc"."3cf8c79b-7128-49b6-99e3-d296b840bc2f"."wmclassmatch" = 1;
       "kwinrulesrc"."86dc4647-b437-4589-aa9d-6e9103212093"."Description" = "YouTube";
@@ -408,7 +407,7 @@ in
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."positionrule" = 2;
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."size" = "2117,1440";
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."sizerule" = 2;
-      "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."title" = "Zoho Mail (mail@pahofmann.com)";
+      "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."title" = "Zoho Mail (mail@hfmnn.com)";
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."titlematch" = 2;
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."types" = 1;
       "kwinrulesrc"."dfa51678-15a5-4797-aa68-e710240ff290"."wmclass" = "zoho mail - desktop Zoho Mail - Desktop";
