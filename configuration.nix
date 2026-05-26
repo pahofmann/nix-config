@@ -3,6 +3,7 @@
     ./hardware-configuration.nix
     ./nixos/base.nix
     ./nixos/boot.nix
+    ./nixos/kernel-cachyos.nix
     ./nixos/nvidia.nix
     ./nixos/desktop-plasma.nix
     ./nixos/printing.nix
