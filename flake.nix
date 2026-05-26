@@ -23,7 +23,21 @@
   outputs = { self, nixpkgs, home-manager, plasma-manager, ... }@inputs:
     let
       system = "x86_64-linux";
+      pkgsForSystem = import nixpkgs {
+        inherit system;
+        config = {
+          allowUnfree = true;
+          permittedInsecurePackages = [
+            "libsoup-2.74.3"
+          ];
+        };
+      };
     in {
+      packages.${system} = rec {
+        exiled-exchange-2 = pkgsForSystem.callPackage ./pkgs/exiled-exchange-2.nix { };
+        default = exiled-exchange-2;
+      };
+
       # Please replace my-nixos with your hostname
       nixosConfigurations.nixtop = nixpkgs.lib.nixosSystem {
         inherit system;

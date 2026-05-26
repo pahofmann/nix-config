@@ -17,78 +17,6 @@ let
       hash = "sha256-f4lIdknIXTTv3yxvs754n6/a01h5xxWWOvnjwQcIPnw=";
     };
   });
-  exiledExchange2Icon = pkgs.fetchurl {
-    url = "https://raw.githubusercontent.com/Kvan7/Exiled-Exchange-2/master/renderer/public/images/jeweler.png";
-    hash = "sha256-30GXskIwOQ4m1a6dcm7MXVwlHsYvQ+SnavEGTKHqHUo=";
-  };
-  exiledExchange2 = pkgs.writeShellApplication {
-    name = "exiled-exchange-2";
-    runtimeInputs = with pkgs; [ coreutils curl jq ];
-    text = ''
-      set -euo pipefail
-
-      appDir="''${XDG_DATA_HOME:-$HOME/.local/share}/exiled-exchange-2"
-      appImage="$appDir/Exiled-Exchange-2.AppImage"
-      seedMarker="$appDir/.bootstrapped-v0.14.0"
-      seedUrl="https://github.com/Kvan7/Exiled-Exchange-2/releases/download/v0.14.0/Exiled-Exchange-2-0.14.0.AppImage"
-      latestReleaseUrl="https://api.github.com/repos/Kvan7/Exiled-Exchange-2/releases/latest"
-      tmpJson=""
-      tmpApp=""
-
-      cleanup() {
-        if [ -n "$tmpJson" ]; then
-          rm -f "$tmpJson"
-        fi
-
-        if [ -n "$tmpApp" ]; then
-          rm -f "$tmpApp"
-        fi
-      }
-
-      downloadLatestAppImage() {
-        tmpJson="$(mktemp)"
-        curl -fsSL "$latestReleaseUrl" -o "$tmpJson"
-
-        jq -r '
-          .assets
-          | map(select(.name | ascii_downcase | endswith(".appimage")))
-          | first
-          | .browser_download_url // empty
-        ' "$tmpJson"
-      }
-
-      downloadToStablePath() {
-        local sourceUrl="$1"
-        tmpApp="$(mktemp "$appDir/.Exiled-Exchange-2.XXXXXX.AppImage")"
-        curl -fL "$sourceUrl" -o "$tmpApp"
-        chmod 755 "$tmpApp"
-        mv -f "$tmpApp" "$appImage"
-      }
-
-      trap cleanup EXIT
-      mkdir -p "$appDir"
-
-      if [ ! -f "$appImage" ]; then
-        # Keep the on-disk filename versionless so electron-updater can
-        # overwrite it in place on future AppImage upgrades.
-        if [ ! -f "$seedMarker" ]; then
-          downloadToStablePath "$seedUrl"
-          touch "$seedMarker"
-        else
-          latestUrl="$(downloadLatestAppImage)"
-          if [ -z "$latestUrl" ]; then
-            echo "Could not find the latest Exiled Exchange 2 AppImage asset." >&2
-            exit 1
-          fi
-
-          downloadToStablePath "$latestUrl"
-        fi
-      fi
-
-      chmod 755 "$appImage"
-      exec "$appImage" "$@"
-    '';
-  };
 in
 
 {
@@ -103,8 +31,6 @@ in
       "${pkgs.webex}/opt/Webex/bin/sparklogosmall.png";
     ".local/share/icons/hicolor/128x128/apps/webex.png".source = 
       "${pkgs.webex}/opt/Webex/bin/sparklogosmall.png";
-    ".local/share/icons/hicolor/128x128/apps/exiled-exchange-2.png".source =
-      exiledExchange2Icon;
     ".config/plasma-workspace/env/10-import-session-env.sh" = {
       executable = true;
       text = ''
@@ -129,17 +55,6 @@ in
     MimeType=x-scheme-handler/webex;x-scheme-handler/wbx;
     StartupWMClass=Webex webex
     X-GNOME-UsesNotifications=true
-    StartupNotify=true
-  '';
-  home.file.".local/share/applications/exiled-exchange-2.desktop".text = ''
-    [Desktop Entry]
-    Type=Application
-    Name=Exiled Exchange 2
-    Comment=Path of Exile 2 price checker
-    Exec=exiled-exchange-2 %u
-    Icon=exiled-exchange-2
-    Terminal=false
-    Categories=Game;Utility;
     StartupNotify=true
   '';
 
@@ -729,7 +644,7 @@ in
     #printing
     pdfarranger
 
-    exiledExchange2
+    inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.exiled-exchange-2
   ];
 
   # Yakuake autostart
