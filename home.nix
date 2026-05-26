@@ -10,6 +10,13 @@ let
       ];
     };
   };
+  googleChrome147 = pkgs.google-chrome.overrideAttrs (finalAttrs: _: {
+    version = "147.0.7727.116";
+    src = pkgs.fetchurl {
+      url = "https://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_${finalAttrs.version}-1_amd64.deb";
+      hash = "sha256-f4lIdknIXTTv3yxvs754n6/a01h5xxWWOvnjwQcIPnw=";
+    };
+  });
 in
 
 {
@@ -666,6 +673,7 @@ in
 
   programs.google-chrome = {
     enable = true;
+    package = googleChrome147;
     commandLineArgs = [
       "--enable-features=ExtensionsManifestV2Availability"
       "--enable-features=ExtensionsManifestV2Override"
