@@ -1,8 +1,11 @@
-{ pkgs, ... }:
+{ pkgs, inputs, ... }:
 
 let
   webexWrapped = pkgs.writeShellScriptBin "webex-wrapped" ''
     export QT_QPA_PLATFORM=xcb
+    unset WAYLAND_DISPLAY
+    unset NIXOS_OZONE_WL
+    export QT_OPENGL=desktop
     exec ${pkgs.steam-run}/bin/steam-run \
       env LD_LIBRARY_PATH=${pkgs.xorg.libXScrnSaver}/lib:$LD_LIBRARY_PATH \
       ${pkgs.webex}/bin/webex "$@"
@@ -17,6 +20,8 @@ in
     postman
     duf
     gparted
+    exfatprogs
+    inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.balena-etcher
     parted
     tmux
     k9s
