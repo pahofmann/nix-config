@@ -1,22 +1,10 @@
 {
   description = "A simple NixOS flake";
 
-  nixConfig = {
-    extra-substituters = [
-      "https://attic.xuyh0120.win/lantian"
-      "https://cache.garnix.io"
-    ];
-    extra-trusted-public-keys = [
-      "lantian:EeAUQ+W+6r7EtwnmYjeVwx5kOGEBpjlBfPlzGlTNvHc="
-      "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
-    ];
-  };
-
   inputs = {
     # NixOS official package source, using the nixos-25.11 branch here
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nix-cachyos-kernel.url = "github:xddxdd/nix-cachyos-kernel/release";
     home-manager = {
       url = "github:nix-community/home-manager/release-25.11";
       # The `follows` keyword in inputs is used for inheritance.
@@ -46,6 +34,7 @@
       };
     in {
       packages.${system} = rec {
+        balena-etcher = pkgsForSystem.callPackage ./pkgs/balena-etcher.nix { };
         exiled-exchange-2 = pkgsForSystem.callPackage ./pkgs/exiled-exchange-2.nix { };
         proton-cachyos-slr = pkgsForSystem.callPackage ./pkgs/proton-cachyos-slr.nix { };
         default = exiled-exchange-2;

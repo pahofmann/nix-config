@@ -3,11 +3,32 @@
 let
   pkgsUnstable = import inputs.nixpkgs-unstable {
     inherit (pkgs.stdenv.hostPlatform) system;
+    overlays = [
+      (final: prev:
+        let
+          libsoup24Compat = final.callPackage
+            "${pkgs.path}/pkgs/development/libraries/libsoup/default.nix"
+            { };
+          patchCitrix = drv: drv.overrideAttrs (old: {
+            buildInputs = (old.buildInputs or [ ]) ++ [ libsoup24Compat ];
+            runtimeDependencies = (old.runtimeDependencies or [ ]) ++ [ libsoup24Compat ];
+            meta = old.meta // { broken = false; };
+          });
+        in
+        {
+          libsoup_2_4_compat = libsoup24Compat;
+          citrix_workspace_26_01_0 = patchCitrix prev.citrix_workspace_26_01_0;
+          citrix_workspace = final.citrix_workspace_26_01_0;
+        })
+    ];
     config = {
       allowUnfree = true;
       permittedInsecurePackages = [ 
         "libsoup-2.74.3"
       ];
+      problems.handlers = {
+        citrix-workspace.broken = "warn";
+      };
     };
   };
 in
@@ -121,6 +142,7 @@ in
       "kwin"."Switch to Desktop 7" = "Ctrl+Alt+Num+7";
       "kwin"."Switch to Desktop 8" = "Ctrl+Alt+Num+8";
       "kwin"."Switch to Desktop 9" = "Ctrl+Alt+Num+9";
+      "yakuake"."toggle-window-state" = "F12";
     };
     configFile = {
       "baloofilerc"."Basic Settings"."Indexing-Enabled" = false;
@@ -644,7 +666,7 @@ in
     xdg.configFile."autostart/yakuake.desktop".text = ''
     [Desktop Entry]
     Type=Application
-    Exec=yakuake
+    Exec=${pkgs.kdePackages.yakuake}/bin/yakuake
     Hidden=false
     NoDisplay=false
     X-GNOME-Autostart-enabled=true
