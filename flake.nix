@@ -36,7 +36,6 @@
       packages.${system} = rec {
         balena-etcher = pkgsForSystem.callPackage ./pkgs/balena-etcher.nix { };
         exiled-exchange-2 = pkgsForSystem.callPackage ./pkgs/exiled-exchange-2.nix { };
-        proton-cachyos-slr = pkgsForSystem.callPackage ./pkgs/proton-cachyos-slr.nix { };
         default = exiled-exchange-2;
       };
 
