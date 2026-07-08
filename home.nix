@@ -6,26 +6,32 @@ let
     overlays = [
       (final: prev:
         let
-          libsoup24Compat = final.callPackage
-            "${pkgs.path}/pkgs/development/libraries/libsoup/default.nix"
-            { };
-          patchCitrix = drv: drv.overrideAttrs (old: {
-            buildInputs = (old.buildInputs or [ ]) ++ [ libsoup24Compat ];
-            runtimeDependencies = (old.runtimeDependencies or [ ]) ++ [ libsoup24Compat ];
-            meta = old.meta // { broken = false; };
-          });
+          version = "26.04.0.105";
+          name = "linuxx64-${version}.tar.gz";
         in
         {
-          libsoup_2_4_compat = libsoup24Compat;
-          citrix_workspace_26_01_0 = patchCitrix prev.citrix_workspace_26_01_0;
-          citrix_workspace = final.citrix_workspace_26_01_0;
+          "citrix-workspace" = prev."citrix-workspace".overrideAttrs (_: {
+            inherit version;
+            src = prev.requireFile {
+              inherit name;
+              sha256 = "1kl6b1ldjd9gb6cmvhxf6ggvc3amq1kz0qwjlb1fp6dxx0pivwm8";
+              message = ''
+                In order to use Citrix Workspace, you need to comply with the Citrix EULA and download
+                the 64-bit binaries, .tar.gz from:
+
+                https://www.citrix.com/downloads/workspace-app/betas-and-tech-previews/workspace-app-tp-gcc11-for-linux.html
+
+                Once you have downloaded the file, please use the following command and re-run the
+                installation:
+
+                nix-prefetch-url file://$PWD/${name}
+              '';
+            };
+          });
         })
     ];
     config = {
       allowUnfree = true;
-      permittedInsecurePackages = [ 
-        "libsoup-2.74.3"
-      ];
       problems.handlers = {
         citrix-workspace.broken = "warn";
       };
@@ -75,6 +81,76 @@ in
   home.activation = {
     updateIconCache = lib.hm.dag.entryAfter ["writeBoundary"] ''
       $DRY_RUN_CMD ${pkgs.gtk3}/bin/gtk-update-icon-cache $VERBOSE_ARG -t -f ~/.local/share/icons/hicolor
+    '';
+    ensureCitrixGlWorkaround = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      citrixCfg="$HOME/.ICAClient/wfclient.ini"
+
+      if [ -f "$citrixCfg" ]; then
+        tmpFile="$(${pkgs.coreutils}/bin/mktemp)"
+
+        ${pkgs.gawk}/bin/awk '
+          BEGIN {
+            in_wfclient = 0
+            saw_opengl = 0
+            saw_twi_opengl = 0
+            saw_swap = 0
+          }
+
+          /^\[WFClient\]$/ {
+            in_wfclient = 1
+            print
+            next
+          }
+
+          /^\[/ {
+            if (in_wfclient) {
+              if (!saw_opengl) print "OpenGLEnabled=False"
+              if (!saw_twi_opengl) print "TWIOpenGLEnabled=False"
+              if (!saw_swap) print "EGLSwapInterval=0"
+            }
+
+            in_wfclient = 0
+          }
+
+          {
+            if (in_wfclient && $0 ~ /^OpenGLEnabled[[:space:]]*=/) {
+              if (!saw_opengl) {
+                print "OpenGLEnabled=False"
+                saw_opengl = 1
+              }
+              next
+            }
+
+            if (in_wfclient && $0 ~ /^TWIOpenGLEnabled[[:space:]]*=/) {
+              if (!saw_twi_opengl) {
+                print "TWIOpenGLEnabled=False"
+                saw_twi_opengl = 1
+              }
+              next
+            }
+
+            if (in_wfclient && $0 ~ /^EGLSwapInterval[[:space:]]*=/) {
+              if (!saw_swap) {
+                print "EGLSwapInterval=0"
+                saw_swap = 1
+              }
+              next
+            }
+
+            print
+          }
+
+          END {
+            if (in_wfclient) {
+              if (!saw_opengl) print "OpenGLEnabled=False"
+              if (!saw_twi_opengl) print "TWIOpenGLEnabled=False"
+              if (!saw_swap) print "EGLSwapInterval=0"
+            }
+          }
+        ' "$citrixCfg" > "$tmpFile"
+
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$citrixCfg"
+      fi
     '';
   };
   programs.fish = {
@@ -646,7 +722,7 @@ in
 
 
     kdePackages.yakuake
-    pkgsUnstable.citrix_workspace
+    pkgsUnstable."citrix-workspace"
     teams-for-linux
     pass # secret management
     nextcloud-client

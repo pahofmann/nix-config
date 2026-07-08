@@ -12,7 +12,7 @@
 }:
 
 let
-  version = "0.15.2";
+  version = "0.15.8";
   extraLibPath = lib.makeLibraryPath [
     libxkbcommon
     xorg.libX11
@@ -39,8 +39,8 @@ let
       shopt -s nullglob
 
       appDir="''${XDG_DATA_HOME:-$HOME/.local/share}/exiled-exchange-2"
-      bundledAppImage="$appDir/Exiled-Exchange-2-${version}.AppImage"
-      sourceUrl="https://github.com/Kvan7/Exiled-Exchange-2/releases/download/v${version}/Exiled-Exchange-2-${version}.AppImage"
+      updaterPendingDir="''${XDG_CACHE_HOME:-$HOME/.cache}/exiled-exchange-2-updater/pending"
+      bootstrapVersion="${version}"
       tmpApp=""
       appImages=()
       appImage=""
@@ -54,11 +54,60 @@ let
       trap cleanup EXIT
       mkdir -p "$appDir"
 
-      if [ ! -f "$bundledAppImage" ]; then
+      download_appimage() {
+        local downloadVersion="$1"
+        local targetAppImage="$appDir/Exiled-Exchange-2-$downloadVersion.AppImage"
+        local sourceUrl="https://github.com/Kvan7/Exiled-Exchange-2/releases/download/v$downloadVersion/Exiled-Exchange-2-$downloadVersion.AppImage"
+
+        if [ -f "$targetAppImage" ]; then
+          printf '%s\n' "$targetAppImage"
+          return 0
+        fi
+
         tmpApp="$(mktemp "$appDir/.Exiled-Exchange-2.XXXXXX.AppImage")"
         curl -fL "$sourceUrl" -o "$tmpApp"
         chmod 755 "$tmpApp"
-        mv -f "$tmpApp" "$bundledAppImage"
+        mv -f "$tmpApp" "$targetAppImage"
+        printf '%s\n' "$targetAppImage"
+      }
+
+      maybe_promote_pending_update() {
+        local updateInfoPath="$updaterPendingDir/update-info.json"
+        local updateInfo=""
+        local pendingFileName=""
+        local pendingVersion=""
+        local pendingAppImage=""
+        local targetAppImage=""
+
+        if [ ! -f "$updateInfoPath" ]; then
+          return 0
+        fi
+
+        updateInfo="$(tr -d '[:space:]' < "$updateInfoPath")"
+        if [[ ! "$updateInfo" =~ \"fileName\":\"(Exiled-Exchange-2-([0-9.]+)\.AppImage)\" ]]; then
+          return 0
+        fi
+
+        pendingFileName="''${BASH_REMATCH[1]}"
+        pendingVersion="''${BASH_REMATCH[2]}"
+        pendingAppImage="$updaterPendingDir/$pendingFileName"
+        targetAppImage="$appDir/$pendingFileName"
+
+        if [ -f "$pendingAppImage" ] && [ "$pendingAppImage" != "$targetAppImage" ]; then
+          chmod 755 "$pendingAppImage"
+          mv -f "$pendingAppImage" "$targetAppImage"
+        fi
+
+        if [ ! -f "$targetAppImage" ]; then
+          download_appimage "$pendingVersion" >/dev/null
+        fi
+      }
+
+      maybe_promote_pending_update
+
+      appImages=( "$appDir"/Exiled-Exchange-2-*.AppImage )
+      if [ "''${#appImages[@]}" -eq 0 ]; then
+        download_appimage "$bootstrapVersion" >/dev/null
       fi
 
       appImages=( "$appDir"/Exiled-Exchange-2-*.AppImage )
