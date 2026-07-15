@@ -7,7 +7,7 @@ let
     unset NIXOS_OZONE_WL
     export QT_OPENGL=desktop
     exec ${pkgs.steam-run}/bin/steam-run \
-      env LD_LIBRARY_PATH=${pkgs.xorg.libXScrnSaver}/lib:$LD_LIBRARY_PATH \
+      env LD_LIBRARY_PATH=${pkgs.libxscrnsaver}/lib:$LD_LIBRARY_PATH \
       ${pkgs.webex}/bin/webex "$@"
   '';
 in
@@ -80,5 +80,6 @@ in
     samba
     mangohud
     gamescope-wsi
+    thunderbird
   ];
 }

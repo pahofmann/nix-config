@@ -7,23 +7,31 @@
   coreutils,
   curl,
   libxkbcommon,
+  libx11,
+  libxcursor,
+  libxi,
+  libxinerama,
+  libxrandr,
+  libxt,
+  libxtst,
+  libxcb,
+  libxkbfile,
   xkeyboard_config,
-  xorg,
 }:
 
 let
   version = "0.15.8";
   extraLibPath = lib.makeLibraryPath [
     libxkbcommon
-    xorg.libX11
-    xorg.libXcursor
-    xorg.libXi
-    xorg.libXinerama
-    xorg.libXrandr
-    xorg.libXt
-    xorg.libXtst
-    xorg.libxcb
-    xorg.libxkbfile
+    libx11
+    libxcursor
+    libxi
+    libxinerama
+    libxrandr
+    libxt
+    libxtst
+    libxcb
+    libxkbfile
   ];
 
   icon = fetchurl {

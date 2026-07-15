@@ -37,6 +37,44 @@ let
       };
     };
   };
+  citrixWorkspaceBase = pkgsUnstable."citrix-workspace";
+  citrixWorkspace = pkgs.runCommand "citrix-workspace-x11-${citrixWorkspaceBase.version}" {
+    nativeBuildInputs = [ pkgs.makeWrapper ];
+  } ''
+    cp -a ${citrixWorkspaceBase}/. "$out"
+    chmod -R u+w "$out"
+
+    for file in \
+      "$out/share/applications/"*.desktop \
+      "$out/opt/citrix-icaclient/desktop/"*.desktop \
+      "$out/opt/citrix-icaclient/"*.sh
+    do
+      sed -i "s|${citrixWorkspaceBase}|$out|g" "$file"
+    done
+
+    for binary in \
+      "$out/bin/selfservice" \
+      "$out/bin/adapter" \
+      "$out/bin/ctxwebhelper" \
+      "$out/bin/wfica" \
+      "$out/opt/citrix-icaclient/selfservice" \
+      "$out/opt/citrix-icaclient/adapter" \
+      "$out/opt/citrix-icaclient/ctxwebhelper" \
+      "$out/opt/citrix-icaclient/wfica"
+    do
+      mv "$binary" "$binary.real"
+      makeWrapper "$binary.real" "$binary" \
+        --set GDK_BACKEND x11 \
+        --set QT_QPA_PLATFORM xcb \
+        --set QT_OPENGL desktop \
+        --set SDL_VIDEODRIVER x11 \
+        --set XDG_SESSION_TYPE x11 \
+        --set EGL_PLATFORM x11 \
+        --set MOZ_ENABLE_WAYLAND 0 \
+        --set NIXOS_OZONE_WL 0 \
+        --set WAYLAND_DISPLAY no
+    done
+  '';
 in
 
 {
@@ -713,7 +751,7 @@ in
 
   # Packages that should be installed to the user profile.
   home.packages = with pkgs; [
-    neofetch
+    fastfetch
 
     #communication
     signal-desktop
@@ -722,7 +760,7 @@ in
 
 
     kdePackages.yakuake
-    pkgsUnstable."citrix-workspace"
+    citrixWorkspace
     teams-for-linux
     pass # secret management
     nextcloud-client

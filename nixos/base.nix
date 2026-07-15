@@ -46,7 +46,7 @@
 
   nixpkgs.config.allowUnfree = true;
   nixpkgs.config.permittedInsecurePackages = [
-    # Citrix Workspace still depends on libsoup 2 on 25.11.
+    # Citrix Workspace still depends on libsoup 2.
     "libsoup-2.74.3"
   ];
 
