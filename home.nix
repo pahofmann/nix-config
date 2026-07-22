@@ -59,20 +59,22 @@ let
       "$out/bin/wfica" \
       "$out/opt/citrix-icaclient/selfservice" \
       "$out/opt/citrix-icaclient/adapter" \
-      "$out/opt/citrix-icaclient/ctxwebhelper" \
+      "$out/opt/citrix-icaclient/util/ctxwebhelper" \
       "$out/opt/citrix-icaclient/wfica"
     do
-      mv "$binary" "$binary.real"
-      makeWrapper "$binary.real" "$binary" \
-        --set GDK_BACKEND x11 \
-        --set QT_QPA_PLATFORM xcb \
-        --set QT_OPENGL desktop \
-        --set SDL_VIDEODRIVER x11 \
-        --set XDG_SESSION_TYPE x11 \
-        --set EGL_PLATFORM x11 \
-        --set MOZ_ENABLE_WAYLAND 0 \
-        --set NIXOS_OZONE_WL 0 \
-        --set WAYLAND_DISPLAY no
+      if [ -e "$binary" ]; then
+        mv "$binary" "$binary.real"
+        makeWrapper "$binary.real" "$binary" \
+          --set GDK_BACKEND x11 \
+          --set QT_QPA_PLATFORM xcb \
+          --set QT_OPENGL desktop \
+          --set SDL_VIDEODRIVER x11 \
+          --set XDG_SESSION_TYPE x11 \
+          --set EGL_PLATFORM x11 \
+          --set MOZ_ENABLE_WAYLAND 0 \
+          --set NIXOS_OZONE_WL 0 \
+          --set WAYLAND_DISPLAY no
+      fi
     done
   '';
 in
