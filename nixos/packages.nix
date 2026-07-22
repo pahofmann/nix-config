@@ -6,9 +6,11 @@ let
     unset WAYLAND_DISPLAY
     unset NIXOS_OZONE_WL
     export QT_OPENGL=desktop
-    exec ${pkgs.steam-run}/bin/steam-run \
-      env LD_LIBRARY_PATH=${pkgs.libxscrnsaver}/lib:$LD_LIBRARY_PATH \
-      ${pkgs.webex}/bin/webex "$@"
+    # nixpkgs already patches Webex and all of its helper processes with the
+    # needed runtime libraries.  Running it in steam-run adds a second,
+    # incompatible FHS runtime; Chromium helpers can then abort while loading
+    # downloaded components.
+    exec ${pkgs.webex}/bin/webex "$@"
   '';
 in
 {
