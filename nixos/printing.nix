@@ -94,6 +94,16 @@ in
 
   hardware.printers.ensurePrinters = [
     {
+      name = "Brother_QL_1110NWB";
+      location = "Office";
+      deviceUri = "ipp://192.168.2.115/ipp/print";
+      model = "everywhere";
+      ppdOptions = {
+        # DK-11247/DHL labels: 103 mm × 164 mm.
+        PageSize = "103x164mm";
+      };
+    }
+    {
       # Keep this as a direct IPP queue.  The automatically discovered
       # `implicitclass` queue needs cups-browsed, which is intentionally off.
       name = "Canon_GX6000_series";
@@ -101,19 +111,15 @@ in
       deviceUri = "ipp://192.168.2.186/ipp/print";
       model = "everywhere";
     }
-    {
-      name = "Brother_QL_1110NWB";
-      location = "Office";
-      deviceUri = "ipp://192.168.2.115/ipp/print";
-      model = "everywhere";
-    }
   ];
+  hardware.printers.ensureDefaultPrinter = "Brother_QL_1110NWB";
 
   systemd.services.ensure-printers = {
     serviceConfig = {
       RemainAfterExit = true;
       StartLimitBurst = 0;
-      Restart = "on-failure";
+      # A sleeping network printer must not cause a perpetual activation loop.
+      Restart = "no";
     };
     script = lib.mkAfter ''
       # ensurePrinters deliberately never deletes removed queues.  Remove the
