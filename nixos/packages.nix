@@ -2,6 +2,19 @@
 
 let
   webexWrapped = pkgs.writeShellScriptBin "webex-wrapped" ''
+    # Webex's self-updater places an unpatched release here.  Its version
+    # selector takes precedence over the Nix package, then aborts because it
+    # cannot resolve NixOS libraries (for example libX11.so.6).  Keep the
+    # download recoverable but ensure the patched Nix package is used.
+    webexLauncher="$HOME/.local/share/WebexLauncher"
+    if [ -d "$webexLauncher" ]; then
+      disabledLauncher="$webexLauncher.nixpkgs-disabled"
+      while [ -e "$disabledLauncher" ]; do
+        disabledLauncher="$disabledLauncher-1"
+      done
+      ${pkgs.coreutils}/bin/mv "$webexLauncher" "$disabledLauncher"
+    fi
+
     export QT_QPA_PLATFORM=xcb
     unset WAYLAND_DISPLAY
     unset NIXOS_OZONE_WL
