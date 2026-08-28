@@ -94,12 +94,20 @@ in
 
   hardware.printers.ensurePrinters = [
     {
-      name = "Brother_QL_1110NWB";
+      name = "Brother_Briefmarke_62x100";
       location = "Office";
       deviceUri = "ipp://192.168.2.115/ipp/print";
       model = "everywhere";
       ppdOptions = {
-        # DK-11247/DHL labels: 103 mm × 164 mm.
+        PageSize = "62x100mm";
+      };
+    }
+    {
+      name = "Brother_DHL_103x164";
+      location = "Office";
+      deviceUri = "ipp://192.168.2.115/ipp/print";
+      model = "everywhere";
+      ppdOptions = {
         PageSize = "103x164mm";
       };
     }
@@ -112,7 +120,7 @@ in
       model = "everywhere";
     }
   ];
-  hardware.printers.ensureDefaultPrinter = "Brother_QL_1110NWB";
+  hardware.printers.ensureDefaultPrinter = "Brother_Briefmarke_62x100";
 
   systemd.services.ensure-printers = {
     serviceConfig = {
@@ -122,10 +130,16 @@ in
       Restart = "no";
     };
     script = lib.mkAfter ''
+      # `-m everywhere` refreshes the IPP description and resets its media
+      # default to 29x90mm.  Set the two queue defaults only after that refresh.
+      ${pkgs.cups}/bin/lpadmin -p Brother_Briefmarke_62x100 -o PageSize=62x100mm
+      ${pkgs.cups}/bin/lpadmin -p Brother_DHL_103x164 -o PageSize=103x164mm
+
       # ensurePrinters deliberately never deletes removed queues.  Remove the
-      # two old Brother queues once the declared, driver-backed queue is ready.
+      # Remove the old single queue once the size-specific queues are ready.
       ${pkgs.cups}/bin/lpadmin -x 'Brother_QL_1110NWB@BRNB42200F808CF.local' || true
       ${pkgs.cups}/bin/lpadmin -x 'QL-1110NWB' || true
+      ${pkgs.cups}/bin/lpadmin -x 'Brother_QL_1110NWB' || true
 
     '';
   };
