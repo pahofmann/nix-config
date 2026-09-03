@@ -156,6 +156,22 @@ in
     X-GNOME-UsesNotifications=true
     StartupNotify=true
   '';
+  home.file.".local/share/applications/hermes.desktop" = {
+    force = true;
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Hermes
+      GenericName=Hermes Desktop
+      Comment=Launch Hermes Desktop
+      Exec=${hermesDesktop}/bin/hermes-desktop
+      Icon=hermes
+      Terminal=false
+      Categories=Utility;Development;
+      StartupNotify=true
+      StartupWMClass=Hermes
+    '';
+  };
   home.activation = {
     removeLegacyHermesDesktopEntry = lib.hm.dag.entryAfter ["writeBoundary"] ''
       $DRY_RUN_CMD ${pkgs.coreutils}/bin/rm -f "$HOME/.local/share/applications/hermes-agent.desktop"
