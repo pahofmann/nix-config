@@ -56,6 +56,7 @@ in
     podman-tui
     docker-compose
     terraform
+    nodejs_22
     kdePackages.kscreen
     zip
     xz
