@@ -95,5 +95,42 @@
     binfmt = true;
   };
 
+  # Hermes Desktop ships an upstream Electron binary rather than a Nix-built
+  # executable.  Provide its loader and the Electron/Chromium runtime libs.
+  programs.nix-ld = {
+    enable = true;
+    libraries = with pkgs; [
+      alsa-lib
+      at-spi2-atk
+      at-spi2-core
+      cairo
+      cups
+      dbus
+      expat
+      gdk-pixbuf
+      glib
+      gtk3
+      libdrm
+      libgbm
+      libGL
+      libX11
+      libXcomposite
+      libXdamage
+      libXext
+      libXfixes
+      libXrandr
+      libXScrnSaver
+      libxcb
+      libxkbcommon
+      mesa
+      nspr
+      nss
+      pango
+      stdenv.cc.cc
+      wayland
+      zlib
+    ];
+  };
+
   system.stateVersion = "24.11";
 }

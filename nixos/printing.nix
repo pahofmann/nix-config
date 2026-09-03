@@ -92,54 +92,36 @@ in
     openFirewall = true;
   };
 
-  hardware.printers.ensurePrinters = [
-    {
-      name = "Brother_Briefmarke_62x100";
-      location = "Office";
-      deviceUri = "ipp://192.168.2.115/ipp/print";
-      model = "everywhere";
-      ppdOptions = {
-        PageSize = "62x100mm";
-      };
-    }
-    {
-      name = "Brother_DHL_103x164";
-      location = "Office";
-      deviceUri = "ipp://192.168.2.115/ipp/print";
-      model = "everywhere";
-      ppdOptions = {
-        PageSize = "103x164mm";
-      };
-    }
-    {
-      # Keep this as a direct IPP queue.  The automatically discovered
-      # `implicitclass` queue needs cups-browsed, which is intentionally off.
-      name = "Canon_GX6000_series";
-      location = "Office";
-      deviceUri = "ipp://192.168.2.186/ipp/print";
-      model = "everywhere";
-    }
-  ];
-  hardware.printers.ensureDefaultPrinter = "Brother_Briefmarke_62x100";
-
   systemd.services.ensure-printers = {
     serviceConfig = {
       RemainAfterExit = true;
       StartLimitBurst = 0;
       # A sleeping network printer must not cause a perpetual activation loop.
       Restart = "no";
+      # `model = "everywhere"` makes lpadmin contact the printer while
+      # provisioning its IPP driver.  A sleeping printer must not make an
+      # otherwise valid NixOS activation fail.
+      SuccessExitStatus = "1";
     };
     script = lib.mkAfter ''
-      # `-m everywhere` refreshes the IPP description and resets its media
-      # default to 29x90mm.  Set the two queue defaults only after that refresh.
-      ${pkgs.cups}/bin/lpadmin -p Brother_Briefmarke_62x100 -o PageSize=62x100mm
-      ${pkgs.cups}/bin/lpadmin -p Brother_DHL_103x164 -o PageSize=103x164mm
+      # CUPS keeps these queues in /var/lib/cups.  Do not re-discover them at
+      # boot: IPP Everywhere needs the printer to be awake for that lookup.
+      # The local queues therefore remain visible while the devices are off.
+      if ${pkgs.cups}/bin/lpstat -p Brother_Briefmarke_62x100 >/dev/null 2>&1; then
+        ${pkgs.cups}/bin/lpadmin -p Brother_Briefmarke_62x100 -o PageSize=62x100mm
+        ${pkgs.cups}/bin/lpadmin -d Brother_Briefmarke_62x100
+      fi
+      if ${pkgs.cups}/bin/lpstat -p Brother_DHL_103x164 >/dev/null 2>&1; then
+        ${pkgs.cups}/bin/lpadmin -p Brother_DHL_103x164 -o PageSize=103x164mm
+      fi
 
       # ensurePrinters deliberately never deletes removed queues.  Remove the
       # Remove the old single queue once the size-specific queues are ready.
-      ${pkgs.cups}/bin/lpadmin -x 'Brother_QL_1110NWB@BRNB42200F808CF.local' || true
-      ${pkgs.cups}/bin/lpadmin -x 'QL-1110NWB' || true
-      ${pkgs.cups}/bin/lpadmin -x 'Brother_QL_1110NWB' || true
+      if ${pkgs.cups}/bin/lpstat -p Brother_Briefmarke_62x100 >/dev/null 2>&1; then
+        ${pkgs.cups}/bin/lpadmin -x 'Brother_QL_1110NWB@BRNB42200F808CF.local' || true
+        ${pkgs.cups}/bin/lpadmin -x 'QL-1110NWB' || true
+        ${pkgs.cups}/bin/lpadmin -x 'Brother_QL_1110NWB' || true
+      fi
 
     '';
   };

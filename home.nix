@@ -77,6 +77,42 @@ let
       fi
     done
   '';
+  hermesDesktop = pkgs.writeShellApplication {
+    name = "hermes-desktop";
+    runtimeInputs = with pkgs; [
+      bash
+      coreutils
+      curl
+      gcc
+      git
+      gnumake
+      nodejs_22
+      pkg-config
+      python311
+      uv
+    ];
+    text = ''
+      hermesBin="$HOME/.local/bin/hermes"
+
+      if [ ! -x "$hermesBin" ]; then
+        echo "Installing Hermes Agent for this user..." >&2
+        # The upstream installer downloads uv when this path is absent.  That
+        # binary assumes an FHS Linux loader and exits 127 on NixOS; use the
+        # Nix-built uv instead.  Node and Python above are likewise supplied
+        # through PATH, so their compatible Nix variants are selected.
+        mkdir -p "$HOME/.hermes/bin"
+        ln -sfn ${pkgs.uv}/bin/uv "$HOME/.hermes/bin/uv"
+        ${pkgs.curl}/bin/curl -fsSL \
+          https://hermes-agent.nousresearch.com/install.sh | ${pkgs.bash}/bin/bash
+      fi
+
+      exec "$hermesBin" desktop "$@"
+    '';
+  };
+  hermesIcon = pkgs.fetchurl {
+    url = "https://raw.githubusercontent.com/NousResearch/hermes-agent/v2026.8.31/apps/desktop/assets/icon.png";
+    hash = "sha256-1g0WTiT9z2UyEzuOpDx3ogHkuenbw5YYe1jVHYWQ71I=";
+  };
 in
 
 {
@@ -91,6 +127,9 @@ in
       "${pkgs.webex}/opt/Webex/bin/sparklogosmall.png";
     ".local/share/icons/hicolor/128x128/apps/webex.png".source = 
       "${pkgs.webex}/opt/Webex/bin/sparklogosmall.png";
+    ".local/share/icons/hicolor/64x64/apps/hermes.png".source = hermesIcon;
+    ".local/share/icons/hicolor/128x128/apps/hermes.png".source = hermesIcon;
+    ".local/share/icons/hicolor/256x256/apps/hermes.png".source = hermesIcon;
     ".config/plasma-workspace/env/10-import-session-env.sh" = {
       executable = true;
       text = ''
@@ -117,8 +156,10 @@ in
     X-GNOME-UsesNotifications=true
     StartupNotify=true
   '';
-
   home.activation = {
+    removeLegacyHermesDesktopEntry = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      $DRY_RUN_CMD ${pkgs.coreutils}/bin/rm -f "$HOME/.local/share/applications/hermes-agent.desktop"
+    '';
     updateIconCache = lib.hm.dag.entryAfter ["writeBoundary"] ''
       $DRY_RUN_CMD ${pkgs.gtk3}/bin/gtk-update-icon-cache $VERBOSE_ARG -t -f ~/.local/share/icons/hicolor
     '';
@@ -766,6 +807,7 @@ in
     teams-for-linux
     pass # secret management
     nextcloud-client
+    hermesDesktop
 
     #dev
     direnv
