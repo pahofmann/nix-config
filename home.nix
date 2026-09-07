@@ -650,6 +650,7 @@ in
       "plasma-localerc"."Formats"."LC_MONETARY" = "en_DE.UTF-8";
       "plasma-localerc"."Formats"."LC_NUMERIC" = "de_DE.UTF-8";
       "plasma-localerc"."Formats"."LC_TELEPHONE" = "en_DE.UTF-8";
+      "plasma-localerc"."Formats"."LC_TIME" = "de_DE.UTF-8";
       "plasmanotifyrc"."Applications/com.nextcloud.desktopclient.nextcloud"."Seen" = true;
       "plasmanotifyrc"."Applications/google-chrome"."Seen" = true;
       "plasmanotifyrc"."Applications/teams-for-linux"."Seen" = true;
