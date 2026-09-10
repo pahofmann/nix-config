@@ -1,66 +1,54 @@
 {
-  description = "A simple NixOS flake";
+  description = "Patrick's Hyprvibe-based multi-host NixOS configuration";
 
   inputs = {
-    # NixOS official package source, using the nixos-26.05 branch here
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
-    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     home-manager = {
-      url = "github:nix-community/home-manager/release-26.05";
-      # The `follows` keyword in inputs is used for inheritance.
-      # Here, `inputs.nixpkgs` of home-manager is kept consistent with
-      # the `inputs.nixpkgs` of the current flake,
-      # to avoid problems caused by different versions of nixpkgs.
+      url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    plasma-manager = {
-      url = "github:nix-community/plasma-manager";
+    hyprland = {
+      url = "github:hyprwm/Hyprland";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.home-manager.follows = "home-manager";
     };
   };
 
-  outputs = { self, nixpkgs, home-manager, plasma-manager, ... }@inputs:
+  outputs = inputs@{ self, nixpkgs, home-manager, hyprland, ... }:
     let
       system = "x86_64-linux";
-      pkgsForSystem = import nixpkgs {
+      overlays = [
+        (final: prev: {
+          balena-etcher = final.callPackage ./pkgs/balena-etcher.nix { };
+          exiled-exchange-2 = final.callPackage ./pkgs/exiled-exchange-2.nix { };
+        })
+      ];
+      mkHost = host: nixpkgs.lib.nixosSystem {
         inherit system;
-        config = {
-          allowUnfree = true;
-          permittedInsecurePackages = [
-            "libsoup-2.74.3"
-          ];
-        };
-      };
-    in {
-      packages.${system} = rec {
-        balena-etcher = pkgsForSystem.callPackage ./pkgs/balena-etcher.nix { };
-        exiled-exchange-2 = pkgsForSystem.callPackage ./pkgs/exiled-exchange-2.nix { };
-        default = exiled-exchange-2;
-      };
-
-      # Please replace my-nixos with your hostname
-      nixosConfigurations.nixtop = nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = { inherit inputs system; };
+        specialArgs = { inherit inputs self; };
         modules = [
-          # Import the previous configuration.nix we used,
-          # so the old configuration file still takes effect
-          ./configuration.nix
-
-          # make home-manager as a module of nixos
-          # so that home-manager configuration will be deployed automatically when executing `nixos-rebuild switch`
+          ./hosts/${host}/system.nix
           home-manager.nixosModules.home-manager
           {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.extraSpecialArgs = { inherit inputs system; };
-            home-manager.users.patrick = import ./home.nix;
-            home-manager.sharedModules = [ plasma-manager.homeModules.plasma-manager ];
-
-            # Optionally, use home-manager.extraSpecialArgs to pass arguments to home.nix
-            }
+            nixpkgs.overlays = overlays;
+            home-manager = {
+              useGlobalPkgs = true;
+              useUserPackages = true;
+              extraSpecialArgs = { inherit inputs self; };
+              users.patrick = import ./modules/patrick/home.nix;
+            };
+          }
         ];
+      };
+      pkgs = import nixpkgs { inherit system overlays; config.allowUnfree = true; };
+    in {
+      formatter.${system} = nixpkgs.legacyPackages.${system}.alejandra;
+      packages.${system} = {
+        inherit (pkgs) balena-etcher exiled-exchange-2;
+        default = pkgs.exiled-exchange-2;
+      };
+      nixosConfigurations = {
+        nixtop = mkHost "nixtop";
+        xps15 = mkHost "xps15";
       };
     };
 }

@@ -1,0 +1,47 @@
+{
+  "layer": "top",
+  "position": "top",
+  "modules-left": ["hyprland/workspaces", "hyprland/window"],
+  "modules-center": [],
+  "modules-right": ["pulseaudio", "network", "battery", "clock"],
+  "pulseaudio": {
+    "format": "  {volume}%",
+    "format-muted": "  {volume}%",
+    "on-click": "pavucontrol"
+  },
+  "network": {
+    "format-wifi": "  {essid} {signal}%",
+    "format-ethernet": "  {ip}",
+    "format-disconnected": "󰖪  offline"
+  },
+  "battery": {
+    "format": "  {capacity}%",
+    "format-charging": "  {capacity}%",
+    "states": {
+      "warning": 30,
+      "critical": 15
+    }
+  },
+  "clock": {
+    "format": "{0:%a %b %d  %H:%M} ",
+    "tooltip-format": "<big>{0:%Y %B}</big>\n<tt><small>{calendar}</small></tt>\n\n<b>US</b>\nPacific: {0:%H:%M %Z}\n{tz_list}",
+    "timezone-tooltip-format": "{0:%Z}: {0:%H:%M}",
+    "timezones": [
+      "America/Los_Angeles",
+      "America/Denver",
+      "America/New_York",
+      "Europe/London",
+      "UTC"
+    ],
+    "calendar": {
+      "format": {
+        "today": "<span color='#ffe86b'><b><u>{}</u></b></span>"
+      }
+    },
+    "actions": {
+      "on-scroll-up": "shift_up",
+      "on-scroll-down": "shift_down",
+      "on-click-right": "mode"
+    }
+  }
+}
