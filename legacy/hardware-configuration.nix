@@ -32,10 +32,10 @@
   # fileSystems."/run/media/patrick/bigd" =
   #   { device = "/dev/disk/by-label/bigd";
   #     fsType = "ntfs-3g";
-  #     options = [ 
+  #     options = [
   #       "rw"
-  #       "noatime" 
-  #       "uid=1000"      
+  #       "noatime"
+  #       "uid=1000"
   #       "gid=100"
   #       "umask=0022"
   #     ];
