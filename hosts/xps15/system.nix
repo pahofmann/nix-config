@@ -14,6 +14,10 @@
   # Dell XPS 15: Intel Comet Lake UHD (00:02.0) plus GTX 1650 Ti Mobile
   # (01:00.0).  PRIME render offload keeps the Intel GPU responsible for the
   # internal panel and lets selected applications use NVIDIA via nvidia-offload.
+  # The fresh XPS installation is UEFI-based; retain a systemd-boot entry for
+  # every rebuild so a previous generation remains selectable during testing.
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.efi.canTouchEfiVariables = true;
   services.xserver.videoDrivers = [ "nvidia" ];
   boot.kernelParams = [ "nvidia-drm.modeset=1" ];
   hardware.graphics = { enable = true; enable32Bit = true; };
