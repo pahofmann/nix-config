@@ -1,4 +1,4 @@
-{ pkgs, inputs, ... }:
+{ pkgs, inputs, host, ... }:
 {
   home = {
     username = "patrick";
@@ -11,6 +11,14 @@
     ];
   };
   programs.home-manager.enable = true;
+
+  # The DMS shell owns its runtime state, colors and output fragments.  Only
+  # the portable base and host-local monitor fallback are declared here.
+  xdg.configFile = {
+    "hypr/dank-base.lua".source = ../../configs/danklinux/hyprland-base.lua;
+    "hypr/hyprland.lua".source = ../../. + "/hosts/${host}/hyprland.lua";
+  };
+
   programs.git = {
     enable = true;
     settings = {

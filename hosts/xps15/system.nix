@@ -4,12 +4,11 @@
     ./hardware-configuration.nix
     ../../modules/patrick/base.nix
     ../../modules/patrick/packages.nix
-    ../../modules/hyprvibe
+    ../../modules/desktop/danklinux.nix
   ];
 
   networking.hostName = "xps15";
-  patrick.hyprvibe.enable = true;
-  patrick.hyprland = { mainConfig = ./hyprland.lua; monitorsFile = ./monitors.lua; };
+  patrick.danklinux.enable = true;
 
   # Dell XPS 15: Intel Comet Lake UHD (00:02.0) plus GTX 1650 Ti Mobile
   # (01:00.0).  PRIME render offload keeps the Intel GPU responsible for the
