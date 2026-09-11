@@ -38,6 +38,12 @@ class MultiHostLayoutTests(unittest.TestCase):
         self.assertIn('nvidiaBusId = "PCI:1:0:0"', system)
         self.assertIn("prime.offload.enable = true", system)
 
+    def test_xps15_goodix_533c_uses_the_supported_tod_driver(self):
+        system = (ROOT / "hosts/xps15/system.nix").read_text()
+        self.assertIn("services.fprintd.enable = true", system)
+        self.assertIn("services.fprintd.tod.enable = true", system)
+        self.assertIn("services.fprintd.tod.driver = pkgs.libfprint-2-tod1-goodix", system)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -32,9 +32,11 @@
   hardware.nvidia.prime.offload.enable = true;
   hardware.nvidia.prime.offload.enableOffloadCmd = true;
 
-  # Intel media acceleration and the Thunderbolt 3 controller are native to
-  # this host.  A Goodix 27c6:533c reader exists, but fprintd is not enabled
-  # until compatibility has been confirmed for this exact reader.
+  # Goodix 27c6:533c is the Dell OEM TOD-reader variant supported by
+  # libfprint-2-tod1-goodix.  It is intentionally host-local.
+  services.fprintd.enable = true;
+  services.fprintd.tod.enable = true;
+  services.fprintd.tod.driver = pkgs.libfprint-2-tod1-goodix;
   hardware.graphics.extraPackages = with pkgs; [ intel-media-driver intel-vaapi-driver ];
   services.hardware.bolt.enable = true;
   services.logind.settings.Login = {
