@@ -58,6 +58,12 @@ class MultiHostLayoutTests(unittest.TestCase):
         self.assertNotIn("vicinae-safe", hyprland)
         self.assertIn("waybar -c ~/.config/waybar/config.json -s ~/.config/waybar/style.css", hyprland)
 
+    def test_ci_performs_a_real_xps15_nixos_build(self):
+        workflow = (ROOT / ".github/workflows/nix.yml").read_text()
+        self.assertIn("nix flake check --no-write-lock-file --show-trace", workflow)
+        self.assertIn("host: [nixtop, xps15]", workflow)
+        self.assertIn("nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel", workflow)
+
 
 if __name__ == "__main__":
     unittest.main()

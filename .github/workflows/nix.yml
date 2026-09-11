@@ -1,0 +1,37 @@
+name: NixOS evaluation and builds
+
+on:
+  push:
+    branches:
+      - main
+      - feat/hyprvibe-multihost
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check-and-build:
+    name: Check and build ${{ matrix.host }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [nixtop, xps15]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Evaluate flake outputs
+        run: nix flake check --no-write-lock-file --show-trace
+
+      - name: Build NixOS system closure
+        run: >-
+          nix build
+          .#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel
+          --no-link --print-build-logs --show-trace
