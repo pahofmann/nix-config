@@ -54,6 +54,14 @@ class MultiHostLayoutTests(unittest.TestCase):
         self.assertIn("boot.loader.systemd-boot.enable = true", system)
         self.assertIn('scale = 2', hyprland)
 
+    def test_each_uefi_host_uses_systemd_boot_not_grub(self):
+        for host in ["nixtop", "xps15"]:
+            system = (ROOT / f"hosts/{host}/system.nix").read_text()
+            self.assertIn("boot.loader.systemd-boot.enable = true", system)
+            self.assertIn("boot.loader.efi.canTouchEfiVariables = true", system)
+            self.assertNotIn("boot.loader.grub", system)
+            self.assertNotIn("boot.loader = {", system)
+
     def test_dms_shortcuts_and_terminal_fallback_are_declared(self):
         hyprland = (ROOT / "configs/danklinux/hyprland-base.lua").read_text()
         packages = (ROOT / "modules/patrick/packages.nix").read_text()

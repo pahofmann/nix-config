@@ -12,6 +12,13 @@
   patrick.danklinux.enable = true;
   patrick.printing.enable = true;
 
+  # UEFI host: use systemd-boot exclusively. The former GRUB configuration is
+  # retained only under legacy/ and is not imported into any active host.
+  boot.loader.systemd-boot.enable = true;
+  boot.loader.systemd-boot.configurationLimit = 10;
+  boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader.timeout = 5;
+
   hardware.graphics = { enable = true; enable32Bit = true; };
   services.xserver.videoDrivers = [ "nvidia" ];
   hardware.nvidia = {
