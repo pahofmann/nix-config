@@ -1,16 +1,20 @@
 # XPS 15 hardware handoff
 
-This host is intentionally blocked until it has an immutable, machine-specific
-hardware configuration. On the XPS 15, run:
+Hardware profile added from `nixos-generate-config` on the XPS 15.
+
+- Intel Comet Lake UHD at `PCI:0:2:0`
+- NVIDIA GeForce GTX 1650 Ti Mobile at `PCI:1:0:0`
+- Intel/Killer AX1650s Wi-Fi, Realtek webcam, Goodix 27c6:533c fingerprint
+  reader, Thunderbolt 3 and NVMe storage
+
+The host uses NVIDIA PRIME render offload.  After rebuilding, use
+`nvidia-offload <program>` to run a selected program on the NVIDIA GPU.
+
+Before activating the configuration, capture the actual panel and dock outputs:
 
 ```bash
-sudo nixos-generate-config --show-hardware-config
-lspci -nnk
-lsusb
+hyprctl monitors all
 ```
 
-Replace `hardware-configuration.nix` with the first command's output.  Do not
-copy the nixtop file: it contains disk UUIDs and AMD-specific kernel modules.
-
-After the first Hyprland session, run `hyprctl monitors all` and replace
-`monitors.lua` with the observed internal-panel and dock layout.
+Then replace `monitors.lua`; its generic fallback is intentionally safe during
+the first Hyprland login.

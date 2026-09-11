@@ -28,6 +28,16 @@ class MultiHostLayoutTests(unittest.TestCase):
             self.assertNotIn("nvidia.NVreg_", text, path)
             self.assertNotIn("/dev/disk/by-uuid/", text, path)
 
+    def test_xps15_has_its_own_storage_and_prime_offload_config(self):
+        hardware = (ROOT / "hosts/xps15/hardware-configuration.nix").read_text()
+        system = (ROOT / "hosts/xps15/system.nix").read_text()
+        self.assertIn("15bd307e-401d-4385-843e-bbe0bfa4cc66", hardware)
+        self.assertIn("78C9-94C3", hardware)
+        self.assertNotIn("assertion = false", hardware)
+        self.assertIn('intelBusId = "PCI:0:2:0"', system)
+        self.assertIn('nvidiaBusId = "PCI:1:0:0"', system)
+        self.assertIn("prime.offload.enable = true", system)
+
 
 if __name__ == "__main__":
     unittest.main()
