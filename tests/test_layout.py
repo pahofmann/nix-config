@@ -49,6 +49,15 @@ class MultiHostLayoutTests(unittest.TestCase):
         self.assertIn("boot.loader.systemd-boot.enable = true", system)
         self.assertIn("boot.loader.efi.canTouchEfiVariables = true", system)
 
+    def test_shared_desktop_installs_every_hyprland_launcher_dependency(self):
+        packages = (ROOT / "modules/patrick/packages.nix").read_text()
+        hyprland = (ROOT / "configs/hyprland-base.lua").read_text()
+        for package in ["kitty", "fuzzel", "firefox", "kdePackages.dolphin", "networkmanagerapplet", "blueman"]:
+            self.assertIn(package, packages)
+        self.assertIn('local menu = "fuzzel"', hyprland)
+        self.assertNotIn("vicinae-safe", hyprland)
+        self.assertIn("waybar -c ~/.config/waybar/config.json -s ~/.config/waybar/style.css", hyprland)
+
 
 if __name__ == "__main__":
     unittest.main()

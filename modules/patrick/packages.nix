@@ -2,6 +2,7 @@
 {
   environment.systemPackages = with pkgs; [
     vim git gh tmux nodejs_22 python3 uv
+    kitty fuzzel firefox kdePackages.dolphin networkmanagerapplet blueman
     duf gparted exfatprogs parted k9s gdu
     orca-slicer xournalpp bruno onlyoffice-desktopeditors
     openrazer-daemon polychromatic streamcontroller kdotool
