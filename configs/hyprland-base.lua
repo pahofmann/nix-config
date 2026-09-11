@@ -18,7 +18,11 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("playerctld daemon")
 end)
 
-hl.env("XCURSOR_SIZE", "24")
+hl.env("XCURSOR_SIZE", "48")
+hl.env("GDK_SCALE", "2")
+hl.env("QT_SCALE_FACTOR", "2")
+hl.env("ELM_SCALE", "2")
+hl.env("SDL_VIDEO_SCALE_FACTOR", "2")
 
 hl.config({
     input = {
