@@ -5,12 +5,11 @@
     ../../modules/patrick/base.nix
     ../../modules/patrick/packages.nix
     ../../modules/patrick/printing.nix
-    ../../modules/hyprvibe
+    ../../modules/desktop/danklinux.nix
   ];
 
   networking.hostName = "nixtop";
-  patrick.hyprvibe.enable = true;
-  patrick.hyprland = { mainConfig = ./hyprland.lua; monitorsFile = ./monitors.lua; };
+  patrick.danklinux.enable = true;
   patrick.printing.enable = true;
 
   hardware.graphics = { enable = true; enable32Bit = true; };
