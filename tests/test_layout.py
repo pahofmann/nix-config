@@ -70,6 +70,7 @@ class MultiHostLayoutTests(unittest.TestCase):
         self.assertIn('dms ipc call settings focusOrToggle', hyprland)
         self.assertIn('dms ipc call lock lock', hyprland)
         self.assertIn('hl.bind(mod .. " + RETURN", hl.dsp.exec_cmd("kitty"))', hyprland)
+        self.assertIn('systemctl --user start dms.service', hyprland)
         self.assertIn('kitty', packages)
         self.assertIn('dolphin', packages)
 

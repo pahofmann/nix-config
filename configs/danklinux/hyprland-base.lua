@@ -6,6 +6,10 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("systemctl --user set-environment XDG_CURRENT_DESKTOP=Hyprland XDG_SESSION_DESKTOP=hyprland XDG_SESSION_TYPE=wayland")
     hl.exec_cmd("systemctl --user import-environment DISPLAY WAYLAND_DISPLAY XAUTHORITY HYPRLAND_INSTANCE_SIGNATURE")
     hl.exec_cmd("dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XAUTHORITY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP=Hyprland XDG_SESSION_DESKTOP=hyprland XDG_SESSION_TYPE=wayland")
+    -- DMS is systemd-managed, but explicitly start its unit after the Wayland
+    -- environment was imported. This avoids an empty desktop if SDDM/Hyprland
+    -- did not activate graphical-session.target on the first login.
+    hl.exec_cmd("systemctl --user start dms.service")
     hl.exec_cmd("hypridle")
 end)
 
