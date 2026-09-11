@@ -12,8 +12,11 @@ class MultiHostLayoutTests(unittest.TestCase):
         self.assertIn('url = "github:AvengeMedia/DankMaterialShell/stable"', flake)
         self.assertNotIn("hyprland = {", flake)
         self.assertIn("inputs.dms.nixosModules.dank-material-shell", desktop)
+        self.assertIn("inputs.dms.nixosModules.greeter", desktop)
         self.assertIn("programs.dank-material-shell", desktop)
-        self.assertIn("programs.hyprland", desktop)
+        self.assertIn("programs.dank-material-shell.greeter", desktop)
+        self.assertIn('compositor.name = "hyprland"', desktop)
+        self.assertNotIn("services.displayManager.sddm", desktop)
         self.assertFalse((ROOT / "modules/hyprvibe").exists())
 
     def test_multihost_layout_is_declared(self):
