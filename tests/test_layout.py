@@ -44,6 +44,11 @@ class MultiHostLayoutTests(unittest.TestCase):
         self.assertIn("services.fprintd.tod.enable = true", system)
         self.assertIn("services.fprintd.tod.driver = pkgs.libfprint-2-tod1-goodix", system)
 
+    def test_xps15_declares_a_uefi_bootloader(self):
+        system = (ROOT / "hosts/xps15/system.nix").read_text()
+        self.assertIn("boot.loader.systemd-boot.enable = true", system)
+        self.assertIn("boot.loader.efi.canTouchEfiVariables = true", system)
+
 
 if __name__ == "__main__":
     unittest.main()
