@@ -3,7 +3,10 @@ let
   cfg = config.patrick.danklinux;
 in
 {
-  imports = [ inputs.dms.nixosModules.dank-material-shell ];
+  imports = [
+    inputs.dms.nixosModules.dank-material-shell
+    inputs.dms.nixosModules.greeter
+  ];
 
   options.patrick.danklinux.enable = lib.mkEnableOption "the shared Dank Linux Hyprland desktop";
 
@@ -13,11 +16,14 @@ in
       xwayland.enable = true;
     };
 
-    services.displayManager.sddm = {
-      enable = true;
-      wayland.enable = true;
-    };
+    # DankGreeter is the display manager; it runs via greetd and starts the
+    # Hyprland session selected below. SDDM is intentionally not enabled.
     services.displayManager.defaultSession = "hyprland";
+    programs.dank-material-shell.greeter = {
+      enable = true;
+      compositor.name = "hyprland";
+      configHome = "/home/patrick";
+    };
 
     xdg.portal = {
       enable = true;
