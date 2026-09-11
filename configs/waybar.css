@@ -1,18 +1,42 @@
 * {
   font-family: "FiraCode Nerd Font", monospace;
-  font-size: 12pt;
+  font-size: 14pt;
 }
 
 window#waybar {
-  background: rgba(22, 22, 30, 0.6);
-  color: #c0caf5;
+  background: rgba(20, 25, 35, 0.9);
+  color: #e0e0e0;
+  border-bottom: 2px solid #7aa2f7;
 }
 
 #workspaces button.focused {
   background: #7aa2f7;
   color: #1a1b26;
+  border-radius: 4px;
+}
+
+#workspaces button {
+  padding: 0 4px;
+  margin: 0 2px;
 }
 
 #clock, #battery, #network, #pulseaudio {
-  padding: 0 8px;
+  padding: 0 12px;
+  min-width: 120px;
+}
+
+#clock {
+  color: #bb9af7;
+}
+
+#battery {
+  color: #f78c6e;
+}
+
+#network {
+  color: #c4a7e7;
+}
+
+#pulseaudio {
+  color: #a5adf7;
 }
