@@ -2,6 +2,12 @@
 -- Hyprland workspaces are dynamic: selecting an unused number creates it.
 local mod = "SUPER"
 
+-- Open DMS Spotlight when Super is released by itself.  Binding a modifier
+-- needs its keysym as the target; release avoids opening it before a chord.
+local launcher = hl.dsp.exec_cmd("dms ipc call spotlight toggle")
+hl.bind("SUPER + SUPER_L", launcher, { release = true })
+hl.bind("SUPER + SUPER_R", launcher, { release = true })
+
 -- DMS workspace overview. It supports clicking a workspace and dragging a
 -- window between workspace or monitor previews.
 hl.bind(mod .. " + TAB", hl.dsp.exec_cmd("dms ipc call hypr toggleOverview"))

@@ -64,6 +64,9 @@ class MultiHostDankLinuxTests(unittest.TestCase):
         self.assertIn('".config/hypr/hyprland.lua"', home)
         self.assertIn('hl.dsp.focus({ workspace = i })', bindings)
         self.assertIn('hl.dsp.window.move({ workspace = i })', bindings)
+        self.assertIn('"SUPER + SUPER_L"', bindings)
+        self.assertIn('spotlight toggle', bindings)
+        self.assertIn("release = true", bindings)
 
 
 if __name__ == "__main__":
