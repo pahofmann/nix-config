@@ -14,6 +14,9 @@
   patrick.danklinux.enable = true;
 
   boot.loader.systemd-boot.enable = true;
+  # systemd 260's bootctl can return exit 1 after correctly skipping an older
+  # EFI binary; do not abort an otherwise successful NixOS activation.
+  boot.loader.systemd-boot.graceful = true;
   boot.loader.systemd-boot.configurationLimit = 10;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.timeout = 5;
