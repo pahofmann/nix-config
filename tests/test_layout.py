@@ -22,6 +22,7 @@ class MultiHostDankLinuxTests(unittest.TestCase):
         self.assertIn("programs.dms-shell", desktop)
         self.assertIn("services.displayManager.dms-greeter", desktop)
         self.assertIn('compositor.name = "hyprland"', desktop)
+        self.assertIn("withUWSM = true", desktop)
         self.assertNotIn("sddm", desktop)
         self.assertNotIn("plasma", desktop.lower())
 

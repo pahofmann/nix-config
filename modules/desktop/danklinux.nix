@@ -10,6 +10,10 @@ in
     programs.hyprland = {
       enable = true;
       xwayland.enable = true;
+      # DankGreeter launches the Hyprland session through UWSM.  Enabling it
+      # installs the required user-systemd template units, including
+      # wayland-session-bindpid@.service.
+      withUWSM = true;
     };
 
     programs.dms-shell = {
