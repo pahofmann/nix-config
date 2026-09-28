@@ -14,6 +14,10 @@
   patrick.danklinux.enable = true;
 
   boot.loader.systemd-boot.enable = true;
+  # bootctl 260 returns exit 1 after a harmless no-op update when the ESP
+  # already contains the same EFI binary. Keep the known-good installed
+  # loader and allow `nixos-rebuild boot` to complete in that case.
+  boot.loader.systemd-boot.graceful = true;
   boot.loader.systemd-boot.configurationLimit = 10;
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.timeout = 5;
