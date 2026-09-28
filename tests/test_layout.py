@@ -59,6 +59,8 @@ class MultiHostDankLinuxTests(unittest.TestCase):
         home = self.read("modules/patrick/home.nix")
         bindings = self.read("configs/danklinux/hyprland.lua")
         self.assertIn("hermesDesktop", home)
+        self.assertIn("--include-desktop --skip-setup", home)
+        self.assertIn('fish_add_path "$HOME/.local/bin"', home)
         self.assertIn('".config/hypr/hyprland.lua"', home)
         self.assertIn('hl.dsp.focus({ workspace = i })', bindings)
         self.assertIn('hl.dsp.window.move({ workspace = i })', bindings)

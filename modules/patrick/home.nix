@@ -103,7 +103,8 @@ let
         mkdir -p "$HOME/.hermes/bin"
         ln -sfn ${pkgs.uv}/bin/uv "$HOME/.hermes/bin/uv"
         ${pkgs.curl}/bin/curl -fsSL \
-          https://hermes-agent.nousresearch.com/install.sh | ${pkgs.bash}/bin/bash
+          https://hermes-agent.nousresearch.com/install.sh | ${pkgs.bash}/bin/bash -- \
+          --include-desktop --skip-setup
       fi
 
       exec "$hermesBin" desktop "$@"
@@ -243,6 +244,11 @@ in
   };
   programs.fish = {
     enable = true;
+    # Hermes's upstream installer detects this line and therefore does not try
+    # to mutate Home Manager's immutable config.fish symlink.
+    interactiveShellInit = ''
+      fish_add_path "$HOME/.local/bin"
+    '';
     shellAliases = {
       k = "kubectl";
       brg = "${pkgs.bat-extras.batgrep}/bin/batgrep";
