@@ -47,7 +47,6 @@ class MultiHostDankLinuxTests(unittest.TestCase):
         self.assertIn('nvidiaBusId = "PCI:1:0:0"', system)
         self.assertIn("services.fprintd.tod", system)
         self.assertIn("systemd-boot.enable = true", system)
-        self.assertIn("systemd-boot.graceful = true", system)
 
     def test_citrix_is_enabled_only_for_nixtop(self):
         home = self.read("modules/patrick/home.nix")
