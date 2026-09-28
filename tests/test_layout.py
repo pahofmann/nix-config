@@ -53,13 +53,6 @@ class MultiHostDankLinuxTests(unittest.TestCase):
         self.assertIn("host == \"nixtop\"", home)
         self.assertIn("citrixWorkspace", home)
 
-    def test_hyprland_workspace_shortcuts_are_declarative(self):
-        home = self.read("modules/patrick/home.nix")
-        bindings = self.read("configs/danklinux/hyprland.lua")
-        self.assertIn('".config/hypr/hyprland.lua"', home)
-        self.assertIn('hl.dsp.focus({ workspace = i })', bindings)
-        self.assertIn('hl.dsp.window.move({ workspace = i })', bindings)
-
 
 if __name__ == "__main__":
     unittest.main()

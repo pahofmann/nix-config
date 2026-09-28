@@ -130,7 +130,6 @@ in
     ".local/share/icons/hicolor/64x64/apps/hermes.png".source = hermesIcon;
     ".local/share/icons/hicolor/128x128/apps/hermes.png".source = hermesIcon;
     ".local/share/icons/hicolor/256x256/apps/hermes.png".source = hermesIcon;
-    ".config/hypr/hyprland.lua".source = ../../configs/danklinux/hyprland.lua;
   };
   home.file.".local/share/applications/webex.desktop".text = ''
     [Desktop Entry]
