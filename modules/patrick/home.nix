@@ -1,4 +1,4 @@
-{ config, pkgs, lib, inputs, ... }:
+{ config, pkgs, lib, inputs, host, ... }:
 
 let
   pkgsUnstable = import inputs.nixpkgs-unstable {
@@ -168,6 +168,7 @@ in
     updateIconCache = lib.hm.dag.entryAfter ["writeBoundary"] ''
       $DRY_RUN_CMD ${pkgs.gtk3}/bin/gtk-update-icon-cache $VERBOSE_ARG -t -f ~/.local/share/icons/hicolor
     '';
+  } // lib.optionalAttrs (host == "nixtop") {
     ensureCitrixGlWorkaround = lib.hm.dag.entryAfter ["writeBoundary"] ''
       citrixCfg="$HOME/.ICAClient/wfclient.ini"
 
@@ -335,7 +336,6 @@ in
     signal-desktop
     teamspeak6-client
     discord
-    citrixWorkspace
     teams-for-linux
     pass # secret management
     nextcloud-client
@@ -350,7 +350,7 @@ in
     pdfarranger
 
     inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.exiled-exchange-2
-  ];
+  ] ++ lib.optionals (host == "nixtop") [ citrixWorkspace ];
 
 
   # basic configuration of git, please change to your own

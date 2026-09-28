@@ -48,6 +48,11 @@ class MultiHostDankLinuxTests(unittest.TestCase):
         self.assertIn("services.fprintd.tod", system)
         self.assertIn("systemd-boot.enable = true", system)
 
+    def test_citrix_is_enabled_only_for_nixtop(self):
+        home = self.read("modules/patrick/home.nix")
+        self.assertIn("host == \"nixtop\"", home)
+        self.assertIn("citrixWorkspace", home)
+
 
 if __name__ == "__main__":
     unittest.main()
