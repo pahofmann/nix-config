@@ -6,7 +6,6 @@
     inherit (config.nixpkgs) config;
   };
 
-  networking.hostName = "nixtop";
   networking.networkmanager.enable = true;
 
   time.hardwareClockInLocalTime = true;
