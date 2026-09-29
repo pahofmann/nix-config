@@ -138,38 +138,38 @@ in
     ".local/share/icons/hicolor/128x128/apps/hermes.png".source = hermesIcon;
     ".local/share/icons/hicolor/256x256/apps/hermes.png".source = hermesIcon;
     ".config/hypr/hyprland.lua".source = ../../configs/danklinux/hyprland.lua;
-  } // lib.optionalAttrs (host == "nixtop") {
-    ".config/hypr/nixtop.lua".source = ../../configs/danklinux/nixtop.lua;
-  };
-  home.file.".local/share/applications/webex.desktop".text = ''
-    [Desktop Entry]
-    Type=Application
-    Name=Webex
-    Comment=Cisco Webex
-    Exec=webex-wrapped %u
-    Icon=webex
-    Terminal=false
-    Categories=Network;VideoConference;
-    MimeType=x-scheme-handler/webex;x-scheme-handler/wbx;
-    StartupWMClass=Webex webex
-    X-GNOME-UsesNotifications=true
-    StartupNotify=true
-  '';
-  home.file.".local/share/applications/hermes.desktop" = {
-    force = true;
-    text = ''
+    ".local/share/applications/webex.desktop".text = ''
       [Desktop Entry]
       Type=Application
-      Name=Hermes
-      GenericName=Hermes Desktop
-      Comment=Launch Hermes Desktop
-      Exec=${hermesDesktop}/bin/hermes-desktop
-      Icon=hermes
+      Name=Webex
+      Comment=Cisco Webex
+      Exec=webex-wrapped %u
+      Icon=webex
       Terminal=false
-      Categories=Utility;Development;
+      Categories=Network;VideoConference;
+      MimeType=x-scheme-handler/webex;x-scheme-handler/wbx;
+      StartupWMClass=Webex webex
+      X-GNOME-UsesNotifications=true
       StartupNotify=true
-      StartupWMClass=Hermes
     '';
+    ".local/share/applications/hermes.desktop" = {
+      force = true;
+      text = ''
+        [Desktop Entry]
+        Type=Application
+        Name=Hermes
+        GenericName=Hermes Desktop
+        Comment=Launch Hermes Desktop
+        Exec=${hermesDesktop}/bin/hermes-desktop
+        Icon=hermes
+        Terminal=false
+        Categories=Utility;Development;
+        StartupNotify=true
+        StartupWMClass=Hermes
+      '';
+    };
+  } // lib.optionalAttrs (host == "nixtop") {
+    ".config/hypr/nixtop.lua".source = ../../configs/danklinux/nixtop.lua;
   };
   home.activation = {
     removeLegacyHermesDesktopEntry = lib.hm.dag.entryAfter ["writeBoundary"] ''

@@ -1,4 +1,5 @@
 import pathlib
+import re
 import unittest
 
 
@@ -54,6 +55,11 @@ class MultiHostDankLinuxTests(unittest.TestCase):
         home = self.read("modules/patrick/home.nix")
         self.assertIn("host == \"nixtop\"", home)
         self.assertIn("citrixWorkspace", home)
+
+    def test_home_file_entries_are_declared_in_one_attribute_set(self):
+        home = self.read("modules/patrick/home.nix")
+        self.assertEqual(home.count("  home.file = {"), 1)
+        self.assertIsNone(re.search(r'^\s*home\.file\."', home, re.MULTILINE))
 
     def test_xps_gets_hermes_and_hyprland_workspace_shortcuts(self):
         home = self.read("modules/patrick/home.nix")
