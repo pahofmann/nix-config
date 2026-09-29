@@ -107,6 +107,12 @@ let
           --include-desktop --skip-setup
       fi
 
+      # The updater reconciles a local checkout and retains its own safety
+      # backups. Do not run a separate check: it can hang on divergence.
+      echo "Checking for Hermes updates..." >&2
+      "$hermesBin" update --yes || \
+        echo "Hermes update failed; starting the installed version." >&2
+
       exec "$hermesBin" desktop "$@"
     '';
   };
@@ -132,6 +138,8 @@ in
     ".local/share/icons/hicolor/128x128/apps/hermes.png".source = hermesIcon;
     ".local/share/icons/hicolor/256x256/apps/hermes.png".source = hermesIcon;
     ".config/hypr/hyprland.lua".source = ../../configs/danklinux/hyprland.lua;
+  } // lib.optionalAttrs (host == "nixtop") {
+    ".config/hypr/nixtop.lua".source = ../../configs/danklinux/nixtop.lua;
   };
   home.file.".local/share/applications/webex.desktop".text = ''
     [Desktop Entry]
@@ -357,7 +365,15 @@ in
     pdfarranger
 
     inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.exiled-exchange-2
-  ] ++ lib.optionals (host == "nixtop") [ citrixWorkspace ];
+  ] ++ lib.optionals (host == "nixtop") [
+    citrixWorkspace
+    kdePackages.yakuake
+    kdePackages.konsole
+    kdePackages.dolphin
+    gcc
+    gnumake
+    procps
+  ];
 
 
   # basic configuration of git, please change to your own

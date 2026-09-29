@@ -1,5 +1,14 @@
 -- Declarative Hyprland workspace bindings for Dank Linux.
 -- Hyprland workspaces are dynamic: selecting an unused number creates it.
+local hl = require("hyprland")
+
+-- DankMaterialShell writes these modules during setup. Keep the compositor
+-- settings, generated layout and per-output preferences active while adding
+-- our declarative bindings below.
+pcall(require, "dms.colors")
+pcall(require, "dms.layout")
+pcall(require, "dms.outputs")
+
 local mod = "SUPER"
 
 -- Open DMS Spotlight when Super is released by itself.  Binding a modifier
@@ -19,3 +28,7 @@ for i = 1, 10 do
   hl.bind(mod .. " + " .. key, hl.dsp.focus({ workspace = i }))
   hl.bind(mod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = i }))
 end
+
+-- Host-specific rules are optional: XPS uses the common setup alone, while
+-- nixtop restores its former desktop workflow in nixtop.lua.
+pcall(dofile, "/home/patrick/.config/hypr/nixtop.lua")

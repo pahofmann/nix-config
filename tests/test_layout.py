@@ -68,6 +68,23 @@ class MultiHostDankLinuxTests(unittest.TestCase):
         self.assertIn('spotlight toggle', bindings)
         self.assertIn("release = true", bindings)
 
+    def test_nixtop_preserves_desktop_workflow_in_host_hyprland_config(self):
+        home = self.read("modules/patrick/home.nix")
+        nixtop = self.read("configs/danklinux/nixtop.lua")
+        self.assertIn('host == "nixtop"', home)
+        self.assertIn('".config/hypr/nixtop.lua"', home)
+        self.assertIn('pcall(dofile, "/home/patrick/.config/hypr/nixtop.lua")', self.read("configs/danklinux/hyprland.lua"))
+        self.assertIn("kdePackages.yakuake", home)
+        self.assertIn("kdePackages.konsole", home)
+        self.assertIn("citrixWorkspace", home)
+        self.assertIn('workspace = "2"', nixtop)
+        self.assertIn('workspace = "3"', nixtop)
+        self.assertIn('workspace = "5"', nixtop)
+        self.assertIn('workspace = "9"', nixtop)
+        self.assertIn('"F12"', nixtop)
+        self.assertIn('"CTRL + ALT + DOWN"', nixtop)
+        self.assertIn('"CTRL + ALT + SHIFT + DOWN"', nixtop)
+
 
 if __name__ == "__main__":
     unittest.main()
