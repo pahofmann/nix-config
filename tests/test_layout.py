@@ -24,8 +24,10 @@ class MultiHostDankLinuxTests(unittest.TestCase):
         self.assertIn("services.displayManager.dms-greeter", desktop)
         self.assertIn('compositor.name = "hyprland"', desktop)
         self.assertIn("withUWSM = true", desktop)
-        self.assertNotIn("sddm", desktop)
-        self.assertNotIn("plasma", desktop.lower())
+        self.assertIn("services.displayManager.sddm.enable = lib.mkForce false", desktop)
+        self.assertIn("services.desktopManager.plasma6.enable = lib.mkForce false", desktop)
+        self.assertNotIn("sddm.enable = true", desktop)
+        self.assertNotIn("plasma6.enable = true", desktop)
 
     def test_active_configuration_has_no_hyprvibe_or_plasma_manager(self):
         forbidden = ("hyprvibe", "plasma-manager", "programs.plasma")

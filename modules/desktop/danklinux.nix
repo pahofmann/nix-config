@@ -32,7 +32,11 @@ in
       enableCalendarEvents = false;
     };
 
-    # DankGreeter is the styled login manager.  It uses greetd, not SDDM.
+    # DankGreeter is the styled login manager. It uses greetd, not SDDM.
+    # Force the legacy Plasma stack off even if a transitive module or a stale
+    # host overlay contributes defaults for it.
+    services.displayManager.sddm.enable = lib.mkForce false;
+    services.desktopManager.plasma6.enable = lib.mkForce false;
     services.displayManager.dms-greeter = {
       enable = true;
       compositor.name = "hyprland";
