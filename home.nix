@@ -106,21 +106,12 @@ let
           https://hermes-agent.nousresearch.com/install.sh | ${pkgs.bash}/bin/bash
       fi
 
-      # `hermes update --check` exits with 1 only when origin/main is ahead.
-      # Update then, but leave a working installed version usable when either
-      # the network check or update itself fails.
-      if "$hermesBin" update --check; then
-        :
-      else
-        updateStatus=$?
-        if [ "$updateStatus" -eq 1 ]; then
-          echo "Updating Hermes Agent..." >&2
-          "$hermesBin" update --yes || \
-            echo "Hermes update failed; starting the installed version." >&2
-        else
-          echo "Unable to check for Hermes updates; starting the installed version." >&2
-        fi
-      fi
+      # `hermes update` includes its own reliable update check.  A separate
+      # `--check` can hang while fetching a divergent local checkout, so let
+      # the updater reconcile that checkout and retain its safety backups.
+      echo "Checking for Hermes updates..." >&2
+      "$hermesBin" update --yes || \
+        echo "Hermes update failed; starting the installed version." >&2
 
       exec "$hermesBin" desktop "$@"
     '';
@@ -862,6 +853,8 @@ in
 
     kdePackages.yakuake
     kdePackages.konsole
+    gcc
+    gnumake
     citrixWorkspace
     teams-for-linux
     pass # secret management
