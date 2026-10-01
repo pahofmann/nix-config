@@ -53,8 +53,8 @@ in
       enableDynamicTheming = true;
       enableAudioWavelength = true;
       enableClipboardPaste = true;
-      # Do not enable integrations whose configuration and credentials are not
-      # declared in this repository.
+      # DankCalendar is used instead of DMS' legacy khal/vdirsyncer bridge.
+      # It manages Microsoft OAuth and CalDAV credentials in the keyring.
       enableVPN = false;
       enableCalendarEvents = false;
     };
@@ -113,6 +113,7 @@ in
       pantheon.elementary-icon-theme
       brightnessctl
       playerctl
+      dmsPkgs.dankcalendar
     ];
 
     # Swappy's tool glyphs use Font Awesome 5 private-use code points.  Without

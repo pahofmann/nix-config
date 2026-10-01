@@ -38,6 +38,7 @@ let
     };
   };
   citrixWorkspaceBase = pkgsUnstable."citrix-workspace";
+  dankCalendar = pkgsUnstable.dankcalendar;
   citrixWorkspace = pkgs.runCommand "citrix-workspace-x11-${citrixWorkspaceBase.version}" {
     nativeBuildInputs = [ pkgs.makeWrapper ];
   } ''
@@ -1281,6 +1282,22 @@ in
     Service = {
       Type = "oneshot";
       ExecStart = "${workspaceNames}/bin/nixtop-workspace-names";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
+  # DankCalendar keeps its own daemon, tray icon, sync scheduler, and native
+  # DMS-styled UI.  OAuth/CalDAV secrets are deliberately created interactively
+  # and stored in GNOME Keyring, never in this repository.
+  systemd.user.services.dankcalendar = {
+    Unit = {
+      Description = "DankCalendar background daemon";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "${dankCalendar}/bin/dcal run -d --hidden";
+      Restart = "on-failure";
+      RestartSec = 3;
     };
     Install.WantedBy = [ "graphical-session.target" ];
   };
