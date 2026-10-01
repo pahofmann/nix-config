@@ -83,7 +83,9 @@ local app_workspace_rules = {
     },
     {
         name = "nixtop-mail-and-tasks",
-        match = { class = "^(Thunderbird|thunderbird|todoist|Todoist)$" },
+        -- zoho-mail-desktop is the native Electron app's Wayland app-id;
+        -- it is not a Chrome window, despite the old browser fallback below.
+        match = { class = "^(Thunderbird|thunderbird|todoist|Todoist|zoho-mail-desktop|Zoho Mail - Desktop)$" },
         workspace = "6",
     },
     {
