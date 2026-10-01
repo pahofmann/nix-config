@@ -1295,7 +1295,10 @@ in
       PartOf = [ "graphical-session.target" ];
     };
     Service = {
-      ExecStart = "${dankCalendar}/bin/dcal run -d --hidden";
+      # `dcal run --daemon` forks and makes systemd consider the unit finished.
+      # The dedicated daemon command stays in the foreground, so systemd can
+      # supervise and restart the calendar backend correctly.
+      ExecStart = "${dankCalendar}/bin/dcal daemon";
       Restart = "on-failure";
       RestartSec = 3;
     };
