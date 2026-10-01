@@ -335,14 +335,18 @@ let
         # `hyprctl dispatch movetoworkspace ...` syntax.  Address the window
         # directly and do not follow it to workspace 5, so autostart does not
         # steal the current workspace.
-        hyprctl eval "hl.dispatch(hl.dsp.window.float({ window = \"address:$address\", action = \"off\" }))" >/dev/null
-        hyprctl eval "hl.dispatch(hl.dsp.window.move({ workspace = \"5\", follow = false, window = \"address:$address\" }))" >/dev/null
+        for _ in 1 2 3; do
+          hyprctl eval "hl.dispatch(hl.dsp.window.float({ window = \"address:$address\", action = \"off\" }))" >/dev/null
+          hyprctl eval "hl.dispatch(hl.dsp.window.move({ workspace = \"5\", follow = false, window = \"address:$address\" }))" >/dev/null
+          sleep 0.1
+        done
       }
 
       select_existing_primary() {
         primary_address="$(hyprctl clients -j 2>/dev/null | jq -r '
-          [.[] | select(.mapped and (.class | ascii_downcase == "webex"))]
-          | first | .address // empty
+          [.[] | select(.mapped and (.class | ascii_downcase == "webex"))
+           | . + { area: ((.size[0] // 0) * (.size[1] // 0)) }]
+          | sort_by(.area) | last | .address // empty
         ')"
         if [ -n "$primary_address" ]; then
           move_primary_to_workspace "$primary_address"
