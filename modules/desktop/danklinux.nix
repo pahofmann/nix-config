@@ -79,7 +79,11 @@ in
       config.common.default = [ "hyprland" "gtk" ];
     };
 
-    security.pam.services.hyprlock = { };
+    # Installing hypridle alone only provides its unit file; it does not start
+    # the daemon.  Enable the service so ~/.config/hypr/hypridle.conf actually
+    # turns displays off after five minutes and suspends after fifteen.
+    services.hypridle.enable = true;
+    programs.hyprlock.enable = true;
     # DMS runs on a compositor rather than a full GNOME session.  Make GNOME
     # Keyring the single Secret Service and unlock it with the greetd login
     # password, so QtKeychain and Electron applications retain credentials.
