@@ -320,7 +320,7 @@ let
   };
   webexWindowRouter = pkgs.writeShellApplication {
     name = "nixtop-webex-window-router";
-    runtimeInputs = [ pkgs.coreutils pkgs.hyprland pkgs.jq pkgs.socat ];
+    runtimeInputs = [ pkgs.coreutils pkgs.findutils pkgs.hyprland pkgs.jq pkgs.socat ];
     text = ''
       # Webex creates native Wayland toplevels with identical class and title
       # for its main window and its popups.  Unlike KWin's former X11 window
@@ -405,6 +405,54 @@ let
           esac
         done
         sleep 1
+      done
+    '';
+  };
+  hyprlandTileSizer = pkgs.writeShellApplication {
+    name = "nixtop-tile-sizer";
+    runtimeInputs = [ pkgs.coreutils pkgs.hyprland pkgs.jq pkgs.socat ];
+    text = ''
+      apply_size() {
+        address="$1"
+        sleep 0.15
+        client="$(hyprctl clients -j | jq -c --arg address "$address" 'first(.[] | select(.address == $address)) // empty')"
+        [ -n "$client" ] || return
+        [ "$(printf '%s' "$client" | jq -r '.floating')" = false ] || return
+        class="$(printf '%s' "$client" | jq -r '.class')"
+        workspace="$(printf '%s' "$client" | jq -r '.workspace.id')"
+        case "$class" in
+          Alacritty|alacritty) wanted=0.333; ratio=0.5 ;;
+          zoho-mail-desktop) wanted=0.667; ratio=1.9 ;;
+          todoist|Todoist) wanted=0.333; ratio=0.5 ;;
+          webex|teams-for-linux|Teams-for-Linux) wanted=0.5; ratio=1.0 ;;
+          Code|code|codium|VSCodium) wanted=0.667; ratio=1.9 ;;
+          *) return ;;
+        esac
+        tiled="$(hyprctl clients -j | jq -c --argjson workspace "$workspace" '[.[] | select(.mapped and (.workspace.id == $workspace) and (.floating | not))]')"
+        [ "$(printf '%s' "$tiled" | jq length)" -eq 2 ] || return
+        active="$(hyprctl activewindow -j | jq -r '.address // empty')"
+        hyprctl dispatch focuswindow "address:$address" >/dev/null
+        hyprctl dispatch layoutmsg "splitratio $ratio exact" >/dev/null
+        sleep 0.05
+        widths="$(hyprctl clients -j | jq -r --arg address "$address" --argjson workspace "$workspace" '
+          [.[] | select(.mapped and (.workspace.id == $workspace) and (.floating | not))] as $clients
+          | ($clients | map(.size[0]) | add) as $total
+          | ($clients[] | select(.address == $address) | .size[0]) / $total
+        ')"
+        swap="$(jq -n --argjson width "$widths" --argjson wanted "$wanted" '
+          if (($width - $wanted) | fabs) > (($width - (1 - $wanted)) | fabs) then true else false end
+        ')"
+        [ "$swap" = true ] && hyprctl dispatch layoutmsg swapsplit >/dev/null
+        [ -n "$active" ] && hyprctl dispatch focuswindow "address:$active" >/dev/null
+      }
+      while true; do
+        socket="$(find "$XDG_RUNTIME_DIR"/hypr -name .socket2.sock -type s 2>/dev/null | head -n1)"
+        [ -n "$socket" ] || { sleep 1; continue; }
+        socat -u "UNIX-CONNECT:$socket" - | while IFS= read -r event; do
+          case "$event" in
+            openwindow\>\>*) payload="''${event#openwindow>>}"; apply_size "0x''${payload%%,*}" ;;
+          esac
+        done
       done
     '';
   };
@@ -1159,6 +1207,19 @@ in
     };
     Service = {
       ExecStart = "${webexWindowRouter}/bin/nixtop-webex-window-router";
+      Restart = "always";
+      RestartSec = 1;
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
+  systemd.user.services.nixtop-tile-sizer = {
+    Unit = {
+      Description = "Apply nixtop app-specific tiled window sizes";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "${hyprlandTileSizer}/bin/nixtop-tile-sizer";
       Restart = "always";
       RestartSec = 1;
     };
