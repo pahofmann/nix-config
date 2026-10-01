@@ -134,6 +134,7 @@ let
       history_file="$state_dir/history.jsonl"
       alert_file="$state_dir/low-battery-alerts.json"
       full_alert_file="$state_dir/full-battery-alerts.json"
+      last_known_file="$state_dir/last-known-batteries.json"
       estimate_file="$state_dir/remaining-time-estimates.json"
       record_history=false
       if [ "''${1:-}" = "--record-history" ]; then
@@ -201,6 +202,23 @@ let
           --argjson devices "$devices" '$devices + [{name: $name, kind: $kind, battery: $battery, charging: $charging, batteryKnown: $batteryKnown}]')"
       done < <(${pkgs.systemd}/bin/busctl --user tree org.razer 2>/dev/null | ${pkgs.gawk}/bin/awk 'match($0, /\/org\/razer\/device\/[^[:space:]]+/) { print substr($0, RSTART, RLENGTH) }')
 
+      # Preserve the last trustworthy level across the short USB/dongle
+      # handover. OpenRazer reports a synthetic zero during that interval.
+      last_known='{}'
+      if [ -f "$last_known_file" ]; then
+        last_known="$(${pkgs.jq}/bin/jq -c 'if type == "object" then . else {} end' "$last_known_file" 2>/dev/null || printf '{}')"
+      fi
+      last_known="$(printf '%s' "$devices" | ${pkgs.jq}/bin/jq -c --argjson lastKnown "$last_known" '
+        reduce .[] as $device ($lastKnown;
+          if $device.batteryKnown then .[$device.kind] = { battery: $device.battery } else . end
+        )')"
+      printf '%s\n' "$last_known" > "$last_known_file"
+      devices="$(printf '%s' "$devices" | ${pkgs.jq}/bin/jq -c --argjson lastKnown "$last_known" '
+        map(if .batteryKnown then . + { batteryCached: false }
+            elif $lastKnown[.kind] then . + $lastKnown[.kind] + { batteryKnown: true, batteryCached: true }
+            else . + { batteryCached: true }
+            end)')"
+
       # Alert only once for each device while it remains at or below 15%.
       # The marker is cleared as soon as it is charged above that threshold.
       alerts='{}'
@@ -213,8 +231,9 @@ let
         battery="$(printf '%s' "$device" | ${pkgs.jq}/bin/jq -r '.battery')"
         charging="$(printf '%s' "$device" | ${pkgs.jq}/bin/jq -r '.charging')"
         battery_known="$(printf '%s' "$device" | ${pkgs.jq}/bin/jq -r '.batteryKnown')"
+        battery_cached="$(printf '%s' "$device" | ${pkgs.jq}/bin/jq -r '.batteryCached // false')"
         notified="$(printf '%s' "$alerts" | ${pkgs.jq}/bin/jq -r --arg kind "$kind" '.[$kind] // false')"
-        if [ "$battery_known" = true ] && [ "$battery" -le 15 ] && [ "$charging" = false ]; then
+        if [ "$battery_known" = true ] && [ "$battery_cached" != true ] && [ "$battery" -le 15 ] && [ "$charging" = false ]; then
           if [ "$notified" != true ]; then
             ${pkgs.libnotify}/bin/notify-send -a "Razer Battery" -u critical -i battery-caution \
               "$name battery low" "$battery% remaining. Please charge your device."
@@ -236,8 +255,9 @@ let
         name="$(printf '%s' "$device" | ${pkgs.jq}/bin/jq -r '.name')"
         battery="$(printf '%s' "$device" | ${pkgs.jq}/bin/jq -r '.battery')"
         charging="$(printf '%s' "$device" | ${pkgs.jq}/bin/jq -r '.charging')"
+        battery_cached="$(printf '%s' "$device" | ${pkgs.jq}/bin/jq -r '.batteryCached // false')"
         notified="$(printf '%s' "$full_alerts" | ${pkgs.jq}/bin/jq -r --arg kind "$kind" '.[$kind] // false')"
-        if [ "$battery" -ge 100 ] && [ "$charging" = true ]; then
+        if [ "$battery_cached" != true ] && [ "$battery" -ge 100 ] && [ "$charging" = true ]; then
           if [ "$notified" != true ]; then
             ${pkgs.libnotify}/bin/notify-send -a "Batteries" -u normal -i battery-full \
               "$name fully charged" "Charging has reached 100%."
