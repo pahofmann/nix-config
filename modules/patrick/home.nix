@@ -507,6 +507,25 @@ in
       X-GNOME-UsesNotifications=true
       StartupNotify=true
     '';
+    # The Citrix package provides the ICA MIME definition but its desktop
+    # entry is not reliably discovered from the wrapped Nix store package.
+    # Install an explicit user entry so Dolphin can offer and remember it.
+    ".local/share/applications/wfica.desktop" = {
+      force = true;
+      text = ''
+        [Desktop Entry]
+        Type=Application
+        Name=Citrix Workspace ICA Client
+        Comment=Open Citrix ICA connection files
+        Exec=${citrixWorkspace}/bin/wfica %f
+        TryExec=${citrixWorkspace}/bin/wfica
+        Icon=receiver
+        Terminal=false
+        MimeType=application/x-ica;
+        Categories=Network;RemoteAccess;
+        StartupWMClass=Wfica
+      '';
+    };
     # Hyprland is not recognised by Chromium's automatic keyring detection.
     # Select the session's Secret Service explicitly rather than falling back
     # to the insecure basic_text store.
@@ -875,6 +894,13 @@ in
       Terminal=false
       X-GNOME-Autostart-enabled=true
     '';
+  };
+
+  xdg.mimeApps = {
+    enable = true;
+    defaultApplications = {
+      "application/x-ica" = [ "wfica.desktop" ];
+    };
   };
 
   home.activation = {
