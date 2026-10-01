@@ -1012,14 +1012,14 @@ in
     '';
   };
 
-  xdg.mimeApps = {
-    enable = true;
-    defaultApplications = {
-      "application/x-ica" = [ "wfica.desktop" ];
-    };
-  };
-
   home.activation = {
+    # Keep existing MIME defaults (browser, mail client, etc.) owned by their
+    # respective applications.  Home Manager's xdg.mimeApps module would take
+    # over both mimeapps.list locations and therefore collide with those files.
+    # Reassert only our Citrix association after the desktop entry is present.
+    configureCitrixMimeAssociation = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      $DRY_RUN_CMD ${pkgs.xdg-utils}/bin/xdg-mime default wfica.desktop application/x-ica
+    '';
     updateIconCache = lib.hm.dag.entryAfter ["writeBoundary"] ''
       $DRY_RUN_CMD ${pkgs.gtk3}/bin/gtk-update-icon-cache $VERBOSE_ARG -t -f ~/.local/share/icons/hicolor
     '';
