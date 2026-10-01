@@ -1,28 +1,37 @@
 { pkgs, inputs, ... }:
 
 let
-  webexWrapped = pkgs.writeShellScriptBin "webex-wrapped" ''
-    # Webex's self-updater places an unpatched release here.  Its version
-    # selector takes precedence over the Nix package, then aborts because it
-    # cannot resolve NixOS libraries (for example libX11.so.6).  Keep the
-    # download recoverable but ensure the patched Nix package is used.
-    webexLauncher="$HOME/.local/share/WebexLauncher"
-    if [ -d "$webexLauncher" ]; then
-      disabledLauncher="$webexLauncher.nixpkgs-disabled"
-      while [ -e "$disabledLauncher" ]; do
-        disabledLauncher="$disabledLauncher-1"
-      done
-      ${pkgs.coreutils}/bin/mv "$webexLauncher" "$disabledLauncher"
+  nixtopWorkspaceCycle = pkgs.writeShellScriptBin "nixtop-workspace-cycle" ''
+    direction="$1"
+    action="$2"
+    active_workspace="$(${pkgs.hyprland}/bin/hyprctl activeworkspace -j)"
+    monitor="$(printf '%s' "$active_workspace" | ${pkgs.jq}/bin/jq -r '.monitor')"
+    current="$(printf '%s' "$active_workspace" | ${pkgs.jq}/bin/jq -r '.id')"
+
+    # The right display owns workspace 11 only.  It is intentionally not part
+    # of the numbered workflow on DP-3, the Dell ultra-wide after early KMS.
+    [ "$monitor" = "DP-3" ] || exit 0
+    case "$current" in
+      1|2|3|4|5|6|7|8|9|10) ;;
+      *) exit 0 ;;
+    esac
+
+    if [ "$direction" = "next" ]; then
+      if [ "$current" -eq 10 ]; then target=1; else target=$((current + 1)); fi
+    else
+      if [ "$current" -eq 1 ]; then target=10; else target=$((current - 1)); fi
     fi
 
-    export QT_QPA_PLATFORM=xcb
-    unset WAYLAND_DISPLAY
-    unset NIXOS_OZONE_WL
-    export QT_OPENGL=desktop
-    # nixpkgs already patches Webex and all of its helper processes with the
-    # needed runtime libraries.  Running it in steam-run adds a second,
-    # incompatible FHS runtime; Chromium helpers can then abort while loading
-    # downloaded components.
+    if [ "$action" = "move" ]; then
+      exec ${pkgs.hyprland}/bin/hyprctl eval "hl.dispatch(hl.dsp.window.move({ workspace = \"$target\" }))"
+    fi
+    exec ${pkgs.hyprland}/bin/hyprctl eval "hl.dispatch(hl.dsp.focus({ workspace = \"$target\" }))"
+  '';
+
+  webexWrapped = pkgs.writeShellScriptBin "webex-wrapped" ''
+    # Keep the Hyprland session environment intact.  In particular, removing
+    # WAYLAND_DISPLAY makes Webex fall back to a nonexistent wayland-0 socket
+    # when the actual session uses a different socket name.
     exec ${pkgs.webex}/bin/webex "$@"
   '';
 in
@@ -31,6 +40,7 @@ in
     vim
     webex
     webexWrapped
+    nixtopWorkspaceCycle
     typora
     postman
     duf
@@ -45,7 +55,6 @@ in
     xournalpp
     bruno
     onlyoffice-desktopeditors
-    openrazer-daemon
     polychromatic
     streamcontroller
     kdotool
@@ -57,7 +66,6 @@ in
     docker-compose
     terraform
     nodejs_22
-    kdePackages.kscreen
     zip
     xz
     unzip

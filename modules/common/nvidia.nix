@@ -4,6 +4,19 @@
   hardware.graphics.enable = true;
   hardware.graphics.enable32Bit = true;
 
+  # Plymouth runs before the regular graphical session.  Load NVIDIA's KMS
+  # stack in the initrd so it has a real framebuffer for the Kuro splash.
+  boot.initrd.kernelModules = [
+    "nvidia"
+    "nvidia_modeset"
+    "nvidia_uvm"
+    "nvidia_drm"
+  ];
+  boot.kernelParams = [
+    "nvidia-drm.modeset=1"
+    "nvidia-drm.fbdev=1"
+  ];
+
   services.xserver.videoDrivers = [ "nvidia" ];
 
   hardware.nvidia = {

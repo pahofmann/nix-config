@@ -9,8 +9,6 @@
     "video.only_lcd=0"
     "console=tty0"
     "fbcon=map:0"
-    "video=DP-2:e"
-    "video=DP-3:e"
     "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
     "nvidia.NVreg_TemporaryFilePath=/var/tmp"
   ];

@@ -1,5 +1,61 @@
 { config, pkgs, inputs, ... }:
 
+let
+  # Kuro is the KDE splash screen Patrick used before moving to DMS.  Plymouth
+  # cannot play the original QML/GIF animation, so extract its first frame and
+  # keep the original artwork and dark background for the entire early boot.
+  kuroPlymouthConfig = pkgs.writeText "kuro.plymouth" ''
+    [Plymouth Theme]
+    Name=Kuro the Cat
+    Description=Kuro the Cat boot splash
+    ModuleName=script
+
+    [script]
+    ImageDir=@THEME_DIR@
+    ScriptFile=@THEME_DIR@/kuro.script
+  '';
+
+  kuroPlymouthScript = pkgs.writeText "kuro.script" ''
+    Window.SetBackgroundTopColor(0.086, 0.086, 0.086);
+    Window.SetBackgroundBottomColor(0.086, 0.086, 0.086);
+
+    kuro.image = Image("kuro.png");
+    kuro.sprite = Sprite(kuro.image);
+
+    fun refresh_callback ()
+      {
+        kuro.sprite.SetX(Window.GetX() + Window.GetWidth() / 2 - kuro.image.GetWidth() / 2);
+        kuro.sprite.SetY(Window.GetY() + Window.GetHeight() / 2 - kuro.image.GetHeight() / 2);
+      }
+
+    Plymouth.SetRefreshFunction(refresh_callback);
+  '';
+
+  kuroPlymouthTheme = pkgs.stdenvNoCC.mkDerivation {
+    pname = "kuro-plymouth-theme";
+    version = "1.1";
+
+    src = pkgs.fetchFromGitHub {
+      owner = "KartikSindura";
+      repo = "kuro";
+      rev = "29067ba";
+      hash = "sha256-suzdaOhnXcphWSzJn8+xJ39HTUDQaHbzH5U72mcgmCs=";
+    };
+
+    nativeBuildInputs = [ pkgs.imagemagick ];
+
+    installPhase = ''
+      themeDir="$out/share/plymouth/themes/kuro"
+      mkdir -p "$themeDir"
+      # Plymouth accepts PNG, not KDE's animated GIF.  The first frame is the
+      # original sleeping-cat artwork displayed by the former KDE splash.
+      magick "$src/contents/splash/images/cat.gif[0]" -strip "$themeDir/kuro.png"
+      install -Dm644 ${kuroPlymouthConfig} "$themeDir/kuro.plymouth"
+      install -Dm644 ${kuroPlymouthScript} "$themeDir/kuro.script"
+      substituteInPlace "$themeDir/kuro.plymouth" --replace-fail "@THEME_DIR@" "$themeDir"
+    '';
+  };
+in
 {
   _module.args.pkgsUnstable = import inputs.nixpkgs-unstable {
     inherit (pkgs.stdenv.hostPlatform) system;
@@ -31,6 +87,15 @@
 
   console.keyMap = "us";
 
+  # Keep the boot console hidden until DankGreeter takes over, using the Kuro
+  # artwork from the former KDE splash rather than the firmware logo.
+  boot.plymouth = {
+    enable = true;
+    theme = "kuro";
+    themePackages = [ kuroPlymouthTheme ];
+  };
+  boot.kernelParams = [ "quiet" "loglevel=3" "rd.systemd.show_status=false" ];
+
   nix.gc = {
     automatic = true;
     dates = "daily";
@@ -57,14 +122,20 @@
     isNormalUser = true;
     description = "Patrick";
     shell = pkgs.fish;
-    extraGroups = [ "networkmanager" "wheel" "openrazer" ];
+    extraGroups = [ "networkmanager" "wheel" ];
     packages = with pkgs; [
       kdePackages.kate
       kdePackages.kcalc
     ];
   };
 
-  hardware.openrazer.enable = false;
+  hardware.openrazer = {
+    enable = true;
+    users = [ "patrick" ];
+    # The DMS widget owns the threshold notification so it can notify once per
+    # discharge cycle for both the mouse and keyboard, without duplicate alerts.
+    batteryNotifier.enable = false;
+  };
 
   hardware.bluetooth = {
     enable = true;

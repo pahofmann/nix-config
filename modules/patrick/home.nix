@@ -120,9 +120,321 @@ let
     url = "https://raw.githubusercontent.com/NousResearch/hermes-agent/v2026.8.31/apps/desktop/assets/icon.png";
     hash = "sha256-1g0WTiT9z2UyEzuOpDx3ogHkuenbw5YYe1jVHYWQ71I=";
   };
+  dmsMarketsPlugin = pkgs.fetchFromGitHub {
+    owner = "TMS-Namespace";
+    repo = "DMS-Markets-Plugin";
+    rev = "1398805cd9ac425ebe742e473c1a42d6ee35f730";
+    hash = "sha256-vyySCXastQa+UxEstG5Ogd9/E1fVJaTnPYsBPcx2l/8=";
+  };
+  razerBatteryStatus = pkgs.writeShellApplication {
+    name = "dms-razer-battery-status";
+    runtimeInputs = [ pkgs.coreutils pkgs.gawk pkgs.gnugrep pkgs.gnused pkgs.jq pkgs.libnotify pkgs.systemd ];
+    text = ''
+      state_dir="''${XDG_STATE_HOME:-$HOME/.local/state}/dms-razer-battery"
+      history_file="$state_dir/history.jsonl"
+      alert_file="$state_dir/low-battery-alerts.json"
+      full_alert_file="$state_dir/full-battery-alerts.json"
+      estimate_file="$state_dir/remaining-time-estimates.json"
+      record_history=false
+      if [ "''${1:-}" = "--record-history" ]; then
+        record_history=true
+      fi
+      ${pkgs.coreutils}/bin/mkdir -p "$state_dir"
+
+      devices='[]'
+      # OpenRazer's daemon uses the wireless/dongle devices while a cable is
+      # connected. Those report a synthetic 0%, but the wired HID functions
+      # expose the actual raw 0–255 level and charging state via sysfs.
+      wired_status() {
+        driver="$1"
+        product="$2"
+        for level_file in /sys/bus/hid/drivers/"$driver"/*:1532:"$product".*/charge_level; do
+          [ -r "$level_file" ] || continue
+          status_file="$(dirname "$level_file")/charge_status"
+          [ -r "$status_file" ] || continue
+          raw_level="$(<"$level_file")"
+          raw_status="$(<"$status_file")"
+          case "$raw_level:$raw_status" in
+            *[!0-9:]*|:) continue ;;
+          esac
+          printf '%s %s\n' "$raw_level" "$raw_status"
+          return 0
+        done
+        return 1
+      }
+
+      mouse_wired_status="$(wired_status razermouse 007A || true)"
+      keyboard_wired_status="$(wired_status razerkbd 025A || true)"
+
+      while IFS= read -r object_path; do
+        name="$(${pkgs.systemd}/bin/busctl --user call org.razer "$object_path" razer.device.misc getDeviceName 2>/dev/null | ${pkgs.gnused}/bin/sed -E 's/^s "(.*)"$/\1/')" || continue
+        battery="$(${pkgs.systemd}/bin/busctl --user call org.razer "$object_path" razer.device.power getBattery 2>/dev/null | ${pkgs.gawk}/bin/awk '{ printf "%d", $2 + 0.5 }')" || continue
+        charging="$(${pkgs.systemd}/bin/busctl --user call org.razer "$object_path" razer.device.power isCharging 2>/dev/null | ${pkgs.gawk}/bin/awk '{ print $2 }')" || continue
+
+        case "$name" in
+          *Viper*) kind=mouse ;;
+          *BlackWidow*) kind=keyboard ;;
+          *) continue ;;
+        esac
+        case "$kind" in
+          mouse) wired_status_value="$mouse_wired_status" ;;
+          keyboard) wired_status_value="$keyboard_wired_status" ;;
+        esac
+        battery_known=true
+        if [ -n "$wired_status_value" ]; then
+          read -r raw_level raw_status <<< "$wired_status_value"
+          battery="$(${pkgs.gawk}/bin/awk -v raw_level="$raw_level" 'BEGIN { printf "%d", raw_level * 100 / 255 + 0.5 }')"
+          if [ "$raw_status" -eq 1 ]; then
+            charging=true
+          else
+            charging=false
+          fi
+        fi
+        # Both the Viper and BlackWidow briefly report a synthetic zero while
+        # their wired and wireless interfaces hand over. A physical 0% is not
+        # useful telemetry here, so wait for the next valid reading rather
+        # than showing a false empty battery or sending a low-battery alert.
+        if [ "$battery" -le 0 ]; then
+          battery_known=false
+        fi
+        devices="$(${pkgs.jq}/bin/jq -cn --arg name "$name" --arg kind "$kind" --argjson battery "$battery" --argjson charging "$charging" --argjson batteryKnown "$battery_known" \
+          --argjson devices "$devices" '$devices + [{name: $name, kind: $kind, battery: $battery, charging: $charging, batteryKnown: $batteryKnown}]')"
+      done < <(${pkgs.systemd}/bin/busctl --user tree org.razer 2>/dev/null | ${pkgs.gawk}/bin/awk 'match($0, /\/org\/razer\/device\/[^[:space:]]+/) { print substr($0, RSTART, RLENGTH) }')
+
+      # Alert only once for each device while it remains at or below 15%.
+      # The marker is cleared as soon as it is charged above that threshold.
+      alerts='{}'
+      if [ -f "$alert_file" ]; then
+        alerts="$(${pkgs.jq}/bin/jq -c 'if type == "object" then . else {} end' "$alert_file" 2>/dev/null || printf '{}')"
+      fi
+      while IFS= read -r device; do
+        kind="$(printf '%s' "$device" | ${pkgs.jq}/bin/jq -r '.kind')"
+        name="$(printf '%s' "$device" | ${pkgs.jq}/bin/jq -r '.name')"
+        battery="$(printf '%s' "$device" | ${pkgs.jq}/bin/jq -r '.battery')"
+        charging="$(printf '%s' "$device" | ${pkgs.jq}/bin/jq -r '.charging')"
+        battery_known="$(printf '%s' "$device" | ${pkgs.jq}/bin/jq -r '.batteryKnown')"
+        notified="$(printf '%s' "$alerts" | ${pkgs.jq}/bin/jq -r --arg kind "$kind" '.[$kind] // false')"
+        if [ "$battery_known" = true ] && [ "$battery" -le 15 ] && [ "$charging" = false ]; then
+          if [ "$notified" != true ]; then
+            ${pkgs.libnotify}/bin/notify-send -a "Razer Battery" -u critical -i battery-caution \
+              "$name battery low" "$battery% remaining. Please charge your device."
+          fi
+          alerts="$(printf '%s' "$alerts" | ${pkgs.jq}/bin/jq -c --arg kind "$kind" '.[$kind] = true')"
+        else
+          alerts="$(printf '%s' "$alerts" | ${pkgs.jq}/bin/jq -c --arg kind "$kind" 'del(.[$kind])')"
+        fi
+      done < <(printf '%s' "$devices" | ${pkgs.jq}/bin/jq -c '.[]')
+      printf '%s\n' "$alerts" > "$alert_file"
+
+      # Notify once per device when a charging cycle actually reaches 100%.
+      full_alerts='{}'
+      if [ -f "$full_alert_file" ]; then
+        full_alerts="$(${pkgs.jq}/bin/jq -c 'if type == "object" then . else {} end' "$full_alert_file" 2>/dev/null || printf '{}')"
+      fi
+      while IFS= read -r device; do
+        kind="$(printf '%s' "$device" | ${pkgs.jq}/bin/jq -r '.kind')"
+        name="$(printf '%s' "$device" | ${pkgs.jq}/bin/jq -r '.name')"
+        battery="$(printf '%s' "$device" | ${pkgs.jq}/bin/jq -r '.battery')"
+        charging="$(printf '%s' "$device" | ${pkgs.jq}/bin/jq -r '.charging')"
+        notified="$(printf '%s' "$full_alerts" | ${pkgs.jq}/bin/jq -r --arg kind "$kind" '.[$kind] // false')"
+        if [ "$battery" -ge 100 ] && [ "$charging" = true ]; then
+          if [ "$notified" != true ]; then
+            ${pkgs.libnotify}/bin/notify-send -a "Batteries" -u normal -i battery-full \
+              "$name fully charged" "Charging has reached 100%."
+          fi
+          full_alerts="$(printf '%s' "$full_alerts" | ${pkgs.jq}/bin/jq -c --arg kind "$kind" '.[$kind] = true')"
+        else
+          full_alerts="$(printf '%s' "$full_alerts" | ${pkgs.jq}/bin/jq -c --arg kind "$kind" 'del(.[$kind])')"
+        fi
+      done < <(printf '%s' "$devices" | ${pkgs.jq}/bin/jq -c '.[]')
+      printf '%s\n' "$full_alerts" > "$full_alert_file"
+
+      if [ "$record_history" = true ]; then
+        now="$(${pkgs.coreutils}/bin/date +%s)"
+        sample="$(${pkgs.jq}/bin/jq -cn --argjson timestamp "$now" --argjson devices "$devices" '{timestamp: $timestamp, devices: [$devices[] | select(.batteryKnown)]}')"
+        printf '%s\n' "$sample" >> "$history_file"
+
+        # Retain a compact, rolling seven-day history; the widget displays its
+        # most recent samples as a small bar chart.
+        tmp_file="$(${pkgs.coreutils}/bin/mktemp "$state_dir/history.XXXXXX")"
+        ${pkgs.jq}/bin/jq -sc --argjson cutoff "$((now - 7 * 24 * 60 * 60))" \
+          'map(select(type == "object") | select(.timestamp >= $cutoff)) | .[]' "$history_file" > "$tmp_file"
+        ${pkgs.coreutils}/bin/mv "$tmp_file" "$history_file"
+      fi
+
+      history="$(${pkgs.jq}/bin/jq -sc 'map(select(type == "object"))' "$history_file")"
+      estimates='{}'
+      if [ -f "$estimate_file" ]; then
+        estimates="$(${pkgs.jq}/bin/jq -c 'if type == "object" then . else {} end' "$estimate_file" 2>/dev/null || printf '{}')"
+      fi
+
+      # Recalculate only when history contains a meaningful discharge slope.
+      # Otherwise retain the last estimate across reconnects and reboots.
+      for kind in mouse keyboard; do
+        estimate="$(${pkgs.jq}/bin/jq -r --arg kind "$kind" '
+          [ .[] | .timestamp as $timestamp | .devices[]?
+            | select(.kind == $kind and (.batteryKnown != false))
+            | { timestamp: $timestamp, battery: .battery } ] as $points
+          | if ($points | length) < 2 then empty
+            else $points[-1] as $latest
+              | [ range(($points | length) - 2; -1; -1) as $index
+                  | $points[$index]
+                  | { elapsed: ($latest.timestamp - .timestamp), used: (.battery - $latest.battery) }
+                  | select(.elapsed >= 1800 and .used >= 1) ][0] as $slope
+              | if $slope == null then empty
+                else (($latest.battery * $slope.elapsed / $slope.used / 60) | round)
+                end
+            end
+        ' "$history_file" 2>/dev/null || true)"
+        case "$estimate" in
+          ""|*[!0-9]*) ;;
+          *) estimates="$(printf '%s' "$estimates" | ${pkgs.jq}/bin/jq -c --arg kind "$kind" --argjson estimate "$estimate" '.[$kind] = $estimate')" ;;
+        esac
+      done
+      printf '%s\n' "$estimates" > "$estimate_file"
+      devices="$(printf '%s' "$devices" | ${pkgs.jq}/bin/jq -c --argjson estimates "$estimates" \
+        'map(. + { remainingMinutes: ($estimates[.kind] // null) })')"
+      ${pkgs.jq}/bin/jq -cn --argjson devices "$devices" --argjson history "$history" \
+        '{devices: $devices, history: $history}'
+    '';
+  };
+  webexWindowRouter = pkgs.writeShellApplication {
+    name = "nixtop-webex-window-router";
+    runtimeInputs = [ pkgs.coreutils pkgs.hyprland pkgs.jq pkgs.socat ];
+    text = ''
+      # Webex creates native Wayland toplevels with identical class and title
+      # for its main window and its popups.  Unlike KWin's former X11 window
+      # type, Hyprland has no discriminating field here.  Webex also initially
+      # maps its *main* window as floating, so the first window of a fresh
+      # Webex session is the main window; later windows are popups.
+      primary_address=""
+
+      move_primary_to_workspace() {
+        address="$1"
+        # Hyprland 0.55 uses Lua dispatchers, not the former
+        # `hyprctl dispatch movetoworkspace ...` syntax.  Address the window
+        # directly and do not follow it to workspace 5, so autostart does not
+        # steal the current workspace.
+        hyprctl eval "hl.dispatch(hl.dsp.window.float({ window = \"address:$address\", action = \"off\" }))" >/dev/null
+        hyprctl eval "hl.dispatch(hl.dsp.window.move({ workspace = \"5\", follow = false, window = \"address:$address\" }))" >/dev/null
+      }
+
+      select_existing_primary() {
+        primary_address="$(hyprctl clients -j 2>/dev/null | jq -r '
+          [.[] | select(.mapped and (.class | ascii_downcase == "webex"))]
+          | first | .address // empty
+        ')"
+        if [ -n "$primary_address" ]; then
+          move_primary_to_workspace "$primary_address"
+        fi
+      }
+
+      client_is_live() {
+        [ -n "$primary_address" ] && hyprctl clients -j 2>/dev/null | jq -e \
+          --arg address "$primary_address" \
+          'any(.[]; .mapped and .address == $address)' >/dev/null
+      }
+
+      handle_open_window() {
+        address="$1"
+        # The event arrives just before a client is always queryable.
+        sleep 0.1
+        is_webex="$(hyprctl clients -j 2>/dev/null | jq -r --arg address "$address" '
+          any(.[]; .mapped and .address == $address and (.class | ascii_downcase == "webex"))
+        ')"
+        [ "$is_webex" = true ] || return 0
+
+        if ! client_is_live; then
+          primary_address="$address"
+          move_primary_to_workspace "$address"
+          return 0
+        fi
+
+        already_floating="$(hyprctl clients -j 2>/dev/null | jq -r --arg address "$address" '
+          first(.[] | select(.address == $address) | .floating) // false
+        ')"
+        if [ "$already_floating" != true ]; then
+          hyprctl eval "hl.dispatch(hl.dsp.window.float({ window = \"address:$address\", action = \"on\" }))" >/dev/null
+        fi
+      }
+
+      while true; do
+        socket=""
+        for candidate in "$XDG_RUNTIME_DIR"/hypr/*/.socket2.sock; do
+          [ -S "$candidate" ] || continue
+          socket="$candidate"
+          break
+        done
+        if [ -z "$socket" ]; then
+          sleep 1
+          continue
+        fi
+
+        HYPRLAND_INSTANCE_SIGNATURE="$(basename "$(dirname "$socket")")"
+        export HYPRLAND_INSTANCE_SIGNATURE
+        select_existing_primary
+        socat -u "UNIX-CONNECT:$socket" - | while IFS= read -r event; do
+          case "$event" in
+            openwindow\>\>*)
+              payload="''${event#openwindow>>}"
+              # The event socket omits the 0x prefix that `hyprctl clients`
+              # uses for the very same address.
+              handle_open_window "0x''${payload%%,*}"
+              ;;
+            closewindow\>\>*) client_is_live || primary_address="" ;;
+          esac
+        done
+        sleep 1
+      done
+    '';
+  };
+  # DMS owns its wallpaper layer, so it disappears briefly while DMS reloads.
+  # Keep the same saved image below it as a stable Wayland background.
+  dmsWallpaperFallback = pkgs.writeShellApplication {
+    name = "dms-wallpaper-fallback";
+    runtimeInputs = with pkgs; [ bash coreutils inotify-tools jq swaybg ];
+    text = ''
+      stateDir="$HOME/.local/state/DankMaterialShell"
+      sessionFile="$stateDir/session.json"
+      currentWallpaper=""
+      swaybgPid=""
+
+      stopBackground() {
+        if [ -n "$swaybgPid" ]; then
+          kill "$swaybgPid" 2>/dev/null || true
+          wait "$swaybgPid" 2>/dev/null || true
+          swaybgPid=""
+        fi
+      }
+
+      refreshBackground() {
+        [ -r "$sessionFile" ] || return
+        wallpaper="$(${pkgs.jq}/bin/jq -r '.wallpaperPath // empty' "$sessionFile" 2>/dev/null || true)"
+        [ -n "$wallpaper" ] && [ -f "$wallpaper" ] || return
+        [ "$wallpaper" = "$currentWallpaper" ] && return
+
+        stopBackground
+        ${pkgs.swaybg}/bin/swaybg -m fill -i "$wallpaper" &
+        swaybgPid="$!"
+        currentWallpaper="$wallpaper"
+      }
+
+      trap 'stopBackground; exit 0' INT TERM EXIT
+      ${pkgs.coreutils}/bin/mkdir -p "$stateDir"
+      while true; do
+        refreshBackground
+        # DMS may replace session.json atomically, hence watch its directory.
+        ${pkgs.inotify-tools}/bin/inotifywait -q \
+          -e close_write -e moved_to -e create "$stateDir" >/dev/null 2>&1 || \
+          ${pkgs.coreutils}/bin/sleep 2
+      done
+    '';
+  };
 in
 
 {
+  imports = [ ./dms-config.nix ];
+
   home.username = "patrick";
   home.homeDirectory = "/home/patrick";
 
@@ -134,10 +446,53 @@ in
       "${pkgs.webex}/opt/Webex/bin/sparklogosmall.png";
     ".local/share/icons/hicolor/128x128/apps/webex.png".source =
       "${pkgs.webex}/opt/Webex/bin/sparklogosmall.png";
-    ".local/share/icons/hicolor/64x64/apps/hermes.png".source = hermesIcon;
-    ".local/share/icons/hicolor/128x128/apps/hermes.png".source = hermesIcon;
-    ".local/share/icons/hicolor/256x256/apps/hermes.png".source = hermesIcon;
-    ".config/hypr/hyprland.lua".source = ../../configs/danklinux/hyprland.lua;
+    # These paths predate the declarative desktop entry. Force the migration
+    # once so an old, unmanaged icon cannot block all Home Manager activation.
+    ".local/share/icons/hicolor/64x64/apps/hermes.png" = {
+      source = hermesIcon;
+      force = true;
+    };
+    ".local/share/icons/hicolor/128x128/apps/hermes.png" = {
+      source = hermesIcon;
+      force = true;
+    };
+    ".local/share/icons/hicolor/256x256/apps/hermes.png" = {
+      source = hermesIcon;
+      force = true;
+    };
+    ".config/hypr/hyprland.lua" = {
+      source = ../../configs/hyprland/base.lua;
+      # Hyprland creates an example config on first start. It is not managed
+      # by Home Manager, so without force it prevents activation forever.
+      force = true;
+    };
+    # DMS' shortcut pop-up parses this legacy file, whereas the active
+    # Hyprland 0.55 configuration is Lua.  This declarative catalogue makes
+    # the pop-up reflect our Lua bindings without affecting their behaviour.
+    ".config/hypr/dms/binds.conf" = {
+      source = ../../configs/hyprland/dms-binds.conf;
+      force = true;
+    };
+    ".config/hypr/hypridle.conf" = {
+      source = ../../configs/hyprland/hypridle.conf;
+      force = true;
+    };
+    # Dolphin is a KDE Frameworks application and selects its palette through
+    # kdeglobals before consulting the generic Qt palette.  The color file is
+    # regenerated by DMS; this only selects it as the active KDE scheme.
+    ".config/kdedefaults/kdeglobals" = {
+      force = true;
+      text = ''
+        [General]
+        ColorScheme=DankMatugen
+
+        [Icons]
+        Theme=ePapirus-Dark
+
+        [KDE]
+        widgetStyle=Breeze
+      '';
+    };
     ".local/share/applications/webex.desktop".text = ''
       [Desktop Entry]
       Type=Application
@@ -151,6 +506,34 @@ in
       StartupWMClass=Webex webex
       X-GNOME-UsesNotifications=true
       StartupNotify=true
+    '';
+    # Hyprland is not recognised by Chromium's automatic keyring detection.
+    # Select the session's Secret Service explicitly rather than falling back
+    # to the insecure basic_text store.
+    ".local/share/applications/signal.desktop" = {
+      force = true;
+      text = ''
+        [Desktop Entry]
+        Type=Application
+        Name=Signal
+        Comment=Private messaging from your desktop
+        Exec=signal-desktop --password-store=gnome-libsecret %U
+        Icon=signal-desktop
+        Terminal=false
+        Categories=Network;InstantMessaging;Chat;
+        MimeType=x-scheme-handler/sgnl;x-scheme-handler/signalcaptcha;
+        StartupWMClass=signal
+      '';
+    };
+    ".config/Code/argv.json".text = builtins.toJSON {
+      "password-store" = "gnome-libsecret";
+    };
+    # OpenRazer's own notifier sees bogus 0% values while the wireless and
+    # wired interfaces exchange control. The DMS battery plugin owns the
+    # user-facing 15% and fully-charged notifications instead.
+    ".config/openrazer/razer.conf".text = ''
+      [Startup]
+      battery_notifier = False
     '';
     ".local/share/applications/hermes.desktop" = {
       force = true;
@@ -168,15 +551,472 @@ in
         StartupWMClass=Hermes
       '';
     };
-  } // lib.optionalAttrs (host == "nixtop") {
-    ".config/hypr/nixtop.lua".source = ../../configs/danklinux/nixtop.lua;
-  };
-  home.activation = {
-    removeLegacyHermesDesktopEntry = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      $DRY_RUN_CMD ${pkgs.coreutils}/bin/rm -f "$HOME/.local/share/applications/hermes-agent.desktop"
+    # Pin the reviewed upstream Markets plugin rather than letting DMS mutate
+    # its plugin directory outside the Nix configuration.
+    ".config/DankMaterialShell/plugins/markets" = {
+      source = dmsMarketsPlugin;
+      recursive = true;
+    };
+    ".config/DankMaterialShell/plugins/razerBattery/plugin.json".text = builtins.toJSON {
+      id = "razerBattery";
+      name = "Razer Battery";
+      description = "Battery status and history for Razer wireless devices";
+      version = "1.0.0";
+      author = "patrick";
+      type = "widget";
+      capabilities = [ "dankbar-widget" ];
+      component = "./RazerBatteryWidget.qml";
+      icon = "battery_full";
+      permissions = [ "process" ];
+      dependencies = [ "openrazer-daemon" ];
+    };
+    ".config/DankMaterialShell/plugins/razerBattery/RazerBatteryWidget.qml".text = ''
+      import QtQuick
+      import Quickshell.Io
+      import qs.Common
+      import qs.Widgets
+      import qs.Modules.Plugins
+
+      PluginComponent {
+          id: root
+          layerNamespacePlugin: "razerBattery"
+
+          property var devices: []
+          property var history: []
+          property string rawResult: ""
+
+          function refresh(recordHistory) {
+              if (!statusProcess.running) {
+                  statusProcess.command = ["${razerBatteryStatus}/bin/dms-razer-battery-status"]
+                      .concat(recordHistory ? ["--record-history"] : [])
+                  statusProcess.running = true
+              }
+          }
+
+          function device(kind) {
+              for (var i = 0; i < devices.length; ++i)
+                  if (devices[i].kind === kind) return devices[i]
+              return null
+          }
+
+          function batteryIcon() {
+              var mouse = device("mouse")
+              var keyboard = device("keyboard")
+              if ((mouse && mouse.charging) || (keyboard && keyboard.charging))
+                  return "battery_charging_full"
+              var lowest = 100
+              if (mouse && mouse.batteryKnown) lowest = Math.min(lowest, mouse.battery)
+              if (keyboard && keyboard.batteryKnown) lowest = Math.min(lowest, keyboard.battery)
+              if (lowest <= 15) return "battery_alert"
+              if (lowest <= 35) return "battery_2_bar"
+              if (lowest <= 60) return "battery_4_bar"
+              return "battery_full"
+          }
+
+          function batteryColor() {
+              var mouse = device("mouse")
+              var keyboard = device("keyboard")
+              if ((mouse && mouse.charging) || (keyboard && keyboard.charging)) return Theme.primary
+              var lowest = 100
+              if (mouse && mouse.batteryKnown) lowest = Math.min(lowest, mouse.battery)
+              if (keyboard && keyboard.batteryKnown) lowest = Math.min(lowest, keyboard.battery)
+              if (lowest <= 15) return Theme.error
+              if (lowest <= 25) return Theme.warning
+              return Theme.surfaceText
+          }
+
+          function deviceColor(current) {
+              if (!current) return Theme.surfaceVariantText
+              if (current.charging) return Theme.primary
+              if (!current.batteryKnown) return Theme.surfaceVariantText
+              if (current.battery <= 15) return Theme.error
+              if (current.battery <= 25) return Theme.warning
+              return Theme.primary
+          }
+
+          function historyFor(kind) {
+              var values = []
+              for (var i = 0; i < history.length; ++i) {
+                  var sample = history[i]
+                  for (var j = 0; j < sample.devices.length; ++j)
+                      if (sample.devices[j].kind === kind && sample.devices[j].batteryKnown !== false)
+                          values.push(sample.devices[j].battery)
+              }
+              return values.slice(Math.max(0, values.length - 48))
+          }
+
+          function remainingTime(kind) {
+              var current = device(kind)
+              if (!current || current.charging) return "charging"
+              var minutes = Number(current.remainingMinutes)
+              if (!isFinite(minutes) || minutes < 1) return "calculating"
+              if (minutes >= 24 * 60) {
+                  var days = Math.floor(minutes / (24 * 60))
+                  var remainingHours = Math.floor((minutes % (24 * 60)) / 60)
+                  return "~" + days + "d " + remainingHours + "h left"
+              }
+              var hours = Math.floor(minutes / 60)
+              return hours > 0 ? "~" + hours + "h " + (minutes % 60) + "m left" : "~" + minutes + "m left"
+          }
+
+          Process {
+              id: statusProcess
+              command: ["${razerBatteryStatus}/bin/dms-razer-battery-status"]
+              running: false
+              stdout: StdioCollector {
+                  onStreamFinished: root.rawResult = text
+              }
+              onExited: exitCode => {
+                  if (exitCode !== 0 || !root.rawResult.trim()) return
+                  try {
+                      var result = JSON.parse(root.rawResult)
+                      root.devices = result.devices || []
+                      root.history = result.history || []
+                  } catch (error) {
+                      console.warn("Razer Battery: invalid status response", error)
+                  }
+              }
+          }
+
+          Timer {
+              interval: 300000
+              running: true
+              repeat: true
+              onTriggered: root.refresh(true)
+          }
+
+          Timer {
+              interval: 10000
+              running: true
+              repeat: true
+              onTriggered: root.refresh(false)
+          }
+
+          Component.onCompleted: refresh(true)
+
+          horizontalBarPill: Component {
+              DankIcon {
+                  name: root.batteryIcon()
+                  size: root.iconSize
+                  color: root.batteryColor()
+              }
+          }
+
+          verticalBarPill: Component {
+              DankIcon {
+                  name: root.batteryIcon()
+                  size: root.iconSize
+                  color: root.batteryColor()
+              }
+          }
+
+          popoutContent: Component {
+              PopoutComponent {
+                  id: popout
+                  headerText: "Batteries"
+                  showCloseButton: false
+
+                  Column {
+                      width: parent.width
+                      spacing: Theme.spacingM
+
+                      Repeater {
+                          model: [
+                              { kind: "mouse", label: "Viper Ultimate", icon: "mouse" },
+                              { kind: "keyboard", label: "BlackWidow V3 Pro", icon: "keyboard" }
+                          ]
+
+                          delegate: Column {
+                              required property var modelData
+                              property var current: root.device(modelData.kind)
+                              property var points: root.historyFor(modelData.kind)
+                              width: parent.width
+                              spacing: Theme.spacingXS
+
+                              Item {
+                                  width: parent.width
+                                  height: Theme.iconSize
+
+                                  DankIcon {
+                                      anchors.left: parent.left
+                                      anchors.verticalCenter: parent.verticalCenter
+                                      name: parent.parent.modelData.icon
+                                      size: Theme.iconSize
+                                      color: Theme.primary
+                                  }
+                                  StyledText {
+                                      anchors.left: parent.left
+                                      anchors.leftMargin: Theme.iconSize + Theme.spacingS
+                                      anchors.verticalCenter: parent.verticalCenter
+                                      text: parent.parent.modelData.label
+                                      color: Theme.surfaceText
+                                      font.pixelSize: Theme.fontSizeMedium
+                                  }
+                                  StyledText {
+                                      anchors.right: parent.right
+                                      anchors.verticalCenter: parent.verticalCenter
+                                      text: !parent.parent.current
+                                          ? "not connected"
+                                          : parent.parent.current.charging
+                                              ? (parent.parent.current.batteryKnown
+                                                  ? Math.round(parent.parent.current.battery) + "% · charging"
+                                                  : "charging")
+                                              : parent.parent.current.batteryKnown
+                                                  ? Math.round(parent.parent.current.battery) + "% · " + root.remainingTime(parent.parent.modelData.kind)
+                                                  : "battery unavailable"
+                                      color: root.deviceColor(parent.parent.current)
+                                      font.pixelSize: Theme.fontSizeMedium
+                                      font.weight: Font.DemiBold
+                                  }
+                              }
+
+                              Rectangle {
+                                  width: parent.width
+                                  height: 7
+                                  radius: height / 2
+                                  color: Theme.surfaceContainerHighest
+                                  Rectangle {
+                                      width: parent.parent.current && parent.parent.current.batteryKnown ? parent.width * parent.parent.current.battery / 100 : 0
+                                      height: parent.height
+                                      radius: height / 2
+                                      color: root.deviceColor(parent.parent.current)
+                                  }
+                              }
+
+                              Item {
+                                  width: parent.width
+                                  height: 28
+                                  visible: parent.points.length > 1
+                                  Row {
+                                      anchors.fill: parent
+                                      spacing: 2
+                                      Repeater {
+                                          model: parent.parent.points
+                                          delegate: Item {
+                                              width: Math.max(2, (parent.width - 94) / Math.max(1, parent.parent.parent.points.length))
+                                              height: parent.height
+                                              Rectangle {
+                                                  anchors.bottom: parent.bottom
+                                                  width: parent.width
+                                                  height: Math.max(2, parent.height * modelData / 100)
+                                                  radius: 1
+                                                  color: Theme.primary
+                                              }
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+          }
+
+          popoutWidth: 330
+          popoutHeight: 230
+      }
     '';
+  } // lib.optionalAttrs (host == "nixtop") {
+    ".config/hypr/host.lua" = {
+      source = ../../configs/hyprland/hosts/nixtop.lua;
+      force = true;
+    };
+  };
+
+  # Start the communication and task applications through the XDG autostart
+  # standard. DMS/Hyprland reads these entries on login, and the existing
+  # window rules then place each app on its intended workspace.
+  xdg.configFile = {
+    "autostart/signal.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Signal
+      Exec=${pkgs.signal-desktop}/bin/signal-desktop --password-store=gnome-libsecret
+      Terminal=false
+      X-GNOME-Autostart-enabled=true
+    '';
+    "autostart/whatsapp-web.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=WhatsApp Web
+      Exec=${pkgs.google-chrome}/bin/google-chrome-stable --profile-directory=Default --app-id=hnpfjngllnobngcgfapefoaidbinmjnm
+      Terminal=false
+      X-GNOME-Autostart-enabled=true
+    '';
+    "autostart/todoist.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Todoist
+      Exec=${pkgs.todoist-electron}/bin/todoist-electron
+      Terminal=false
+      X-GNOME-Autostart-enabled=true
+    '';
+    "autostart/zoho-mail.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Zoho Mail
+      Exec=${pkgs.zoho-mail-desktop}/bin/zoho-mail-desktop
+      Terminal=false
+      X-GNOME-Autostart-enabled=true
+    '';
+    "autostart/webex.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Webex
+      Exec=/run/current-system/sw/bin/webex-wrapped
+      Terminal=false
+      X-GNOME-Autostart-enabled=true
+    '';
+    "autostart/teams-for-linux.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Teams for Linux
+      Exec=${pkgs.teams-for-linux}/bin/teams-for-linux
+      Terminal=false
+      X-GNOME-Autostart-enabled=true
+    '';
+  };
+
+  home.activation = {
     updateIconCache = lib.hm.dag.entryAfter ["writeBoundary"] ''
       $DRY_RUN_CMD ${pkgs.gtk3}/bin/gtk-update-icon-cache $VERBOSE_ARG -t -f ~/.local/share/icons/hicolor
+    '';
+    # DMS 1.4.6 tries the removed Hyprland `exit` dispatcher when logging
+    # out.  UWSM owns this session, so let it stop the compositor and perform
+    # the session teardown instead.  Keep this in DMS' supported custom action
+    # setting rather than adding an application wrapper or altering generated
+    # DMS sources.
+    configureDmsLogout = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      settingsFile="$HOME/.config/DankMaterialShell/settings.json"
+
+      if [ -f "$settingsFile" ]; then
+        tmpFile="$(${pkgs.coreutils}/bin/mktemp)"
+        ${pkgs.jq}/bin/jq \
+          --arg logoutCommand "${pkgs.uwsm}/bin/uwsm stop" \
+          '.customPowerActionLogout = $logoutCommand' \
+          "$settingsFile" > "$tmpFile"
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$settingsFile"
+      fi
+    '';
+    configureDmsBarDisplay = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      settingsFile="$HOME/.config/DankMaterialShell/settings.json"
+
+      if [ -f "$settingsFile" ]; then
+        tmpFile="$(${pkgs.coreutils}/bin/mktemp)"
+        ${pkgs.jq}/bin/jq \
+          --arg primaryMonitor "DP-3" \
+          'if (.barConfigs | type) == "array" then
+             .barConfigs |= map(
+               if .id == "default" then .screenPreferences = [$primaryMonitor] else . end
+             )
+           else . end' \
+          "$settingsFile" > "$tmpFile"
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$settingsFile"
+      fi
+    '';
+    configureDmsWorkspaceLabels = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      settingsFile="$HOME/.config/DankMaterialShell/settings.json"
+
+      if [ -f "$settingsFile" ]; then
+        tmpFile="$(${pkgs.coreutils}/bin/mktemp)"
+        ${pkgs.jq}/bin/jq \
+          '.showWorkspaceName = false | .showWorkspaceIndex = true' \
+          "$settingsFile" > "$tmpFile"
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$settingsFile"
+      fi
+    '';
+    # DMS keeps wallpaper state separately from its visual settings. Preserve
+    # the wallpaper path chosen in the UI and only enable its built-in folder
+    # rotation at the requested fifteen-minute interval.
+    configureDmsWallpaperCycling = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      sessionFile="$HOME/.local/state/DankMaterialShell/session.json"
+
+      if [ -f "$sessionFile" ]; then
+        tmpFile="$(${pkgs.coreutils}/bin/mktemp)"
+        ${pkgs.jq}/bin/jq \
+          '.wallpaperCyclingEnabled = true
+           | .wallpaperCyclingMode = "interval"
+           | .wallpaperCyclingInterval = 900' \
+          "$sessionFile" > "$tmpFile"
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$sessionFile"
+      fi
+    '';
+    configureDmsMarkets = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      pluginSettingsFile="$HOME/.config/DankMaterialShell/plugin_settings.json"
+      barSettingsFile="$HOME/.config/DankMaterialShell/settings.json"
+      btcEurSymbols='[{"id":"BTC-EUR","name":"","provider":"yahoo","priceInterval":"1h","graphInterval":"1M","showChangeWhenPinned":true,"invert":false,"pinned":true}]'
+
+      ${pkgs.coreutils}/bin/mkdir -p "$HOME/.config/DankMaterialShell"
+
+      tmpFile="$(${pkgs.coreutils}/bin/mktemp)"
+      if [ -f "$pluginSettingsFile" ]; then
+        ${pkgs.jq}/bin/jq --argjson btcEurSymbols "$btcEurSymbols" \
+          '.markets = ((.markets // {}) + { enabled: true })
+           | (try (.markets.symbols | fromjson) catch []) as $existingSymbols
+           | (($existingSymbols | map(select(.id != "BTC-EUR"))) + $btcEurSymbols) as $symbols
+           | .markets.symbols = ($symbols | tojson)' \
+          "$pluginSettingsFile" > "$tmpFile"
+      else
+        ${pkgs.jq}/bin/jq -n --argjson btcEurSymbols "$btcEurSymbols" \
+          '{ markets: { enabled: true, symbols: ($btcEurSymbols | tojson) } }' > "$tmpFile"
+      fi
+      $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$pluginSettingsFile"
+
+      if [ -f "$barSettingsFile" ]; then
+        tmpFile="$(${pkgs.coreutils}/bin/mktemp)"
+        ${pkgs.jq}/bin/jq \
+          'if (.barConfigs | type) == "array" then
+             .barConfigs |= map(
+               if .id == "default" then
+                 (.rightWidgets // []) as $widgets
+                 | ($widgets - ["markets"]) as $withoutMarkets
+                 | ($withoutMarkets | index("systemTray")) as $trayIndex
+                 | .rightWidgets = (
+                     if $trayIndex == null then $withoutMarkets + ["markets"]
+                     else $withoutMarkets[0:$trayIndex] + ["markets"] + $withoutMarkets[$trayIndex:]
+                     end
+                   )
+               else . end
+             )
+           else . end' \
+          "$barSettingsFile" > "$tmpFile"
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$barSettingsFile"
+      fi
+    '';
+    configureDmsRazerBattery = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      pluginSettingsFile="$HOME/.config/DankMaterialShell/plugin_settings.json"
+      barSettingsFile="$HOME/.config/DankMaterialShell/settings.json"
+
+      ${pkgs.coreutils}/bin/mkdir -p "$HOME/.config/DankMaterialShell"
+      tmpFile="$(${pkgs.coreutils}/bin/mktemp)"
+      if [ -f "$pluginSettingsFile" ]; then
+        ${pkgs.jq}/bin/jq '.razerBattery = ((.razerBattery // {}) + { enabled: true })' \
+          "$pluginSettingsFile" > "$tmpFile"
+      else
+        ${pkgs.jq}/bin/jq -n '{ razerBattery: { enabled: true } }' > "$tmpFile"
+      fi
+      $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$pluginSettingsFile"
+
+      if [ -f "$barSettingsFile" ]; then
+        tmpFile="$(${pkgs.coreutils}/bin/mktemp)"
+        ${pkgs.jq}/bin/jq \
+          'if (.barConfigs | type) == "array" then
+             .barConfigs |= map(
+               if .id == "default" then
+                 (.rightWidgets // []) as $widgets
+                 | ($widgets - ["razerBattery"]) as $withoutRazerBattery
+                 | ($withoutRazerBattery | index("systemTray")) as $trayIndex
+                 | .rightWidgets = (
+                     if $trayIndex == null then $withoutRazerBattery + ["razerBattery"]
+                     else $withoutRazerBattery[0:($trayIndex + 1)] + ["razerBattery"] + $withoutRazerBattery[($trayIndex + 1):]
+                     end
+                   )
+               else . end
+             )
+           else . end' \
+          "$barSettingsFile" > "$tmpFile"
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$barSettingsFile"
+      fi
     '';
   } // lib.optionalAttrs (host == "nixtop") {
     ensureCitrixGlWorkaround = lib.hm.dag.entryAfter ["writeBoundary"] ''
@@ -250,12 +1090,46 @@ in
       fi
     '';
   };
+
+  systemd.user.services.dms-wallpaper-fallback = {
+    Unit = {
+      Description = "Persistent wallpaper below Dank Material Shell";
+      After = [ "graphical-session.target" ];
+      Before = [ "dms.service" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "${dmsWallpaperFallback}/bin/dms-wallpaper-fallback";
+      Restart = "on-failure";
+      RestartSec = 2;
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
+  systemd.user.services.nixtop-webex-window-router = {
+    Unit = {
+      Description = "Route Webex main window without catching Webex popups";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "${webexWindowRouter}/bin/nixtop-webex-window-router";
+      Restart = "always";
+      RestartSec = 1;
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
   programs.fish = {
     enable = true;
     # Hermes's upstream installer detects this line and therefore does not try
     # to mutate Home Manager's immutable config.fish symlink.
     interactiveShellInit = ''
       fish_add_path "$HOME/.local/bin"
+
+      # GCR/GNOME Keyring owns the SSH agent for this graphical session.
+      # GPG keeps its own agent for OpenPGP, but must not replace SSH_AUTH_SOCK.
+      if test -S "$XDG_RUNTIME_DIR/gcr/ssh"
+        set -gx SSH_AUTH_SOCK "$XDG_RUNTIME_DIR/gcr/ssh"
+      end
     '';
     shellAliases = {
       k = "kubectl";
@@ -367,7 +1241,6 @@ in
     inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.exiled-exchange-2
   ] ++ lib.optionals (host == "nixtop") [
     citrixWorkspace
-    kdePackages.yakuake
     kdePackages.konsole
     kdePackages.dolphin
     gcc
@@ -393,6 +1266,7 @@ in
   programs.google-chrome = {
     enable = true;
     commandLineArgs = [
+      "--password-store=gnome-libsecret"
       "--enable-features=ExtensionsManifestV2Availability"
       "--enable-features=ExtensionsManifestV2Override"
       "--disable-features=ExtensionManifestV2Unsupported,ExtensionManifestV2Disabled"
@@ -432,13 +1306,15 @@ in
 
   # gnupg
   services = {
-      gnome-keyring.enable = true;
       gpg-agent = {
           enable = true;
           defaultCacheTtl = 1800;
-          enableSshSupport = true;
+          # GCR/GNOME Keyring is the session-wide SSH agent. Keeping the GPG
+          # SSH socket here would override it and leave id_rsa unavailable.
+          enableSshSupport = false;
       };
   };
+
   programs.gpg.enable = true;
   # This value determines the home Manager release that your
   # configuration is compatible with. This helps avoid breakage
