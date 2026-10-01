@@ -1034,7 +1034,7 @@ in
         ${pkgs.jq}/bin/jq \
           '.wallpaperCyclingEnabled = true
            | .wallpaperCyclingMode = "interval"
-           | .wallpaperCyclingInterval = 900' \
+           | .wallpaperCyclingInterval = 86400' \
           "$sessionFile" > "$tmpFile"
         $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$sessionFile"
       fi
@@ -1042,7 +1042,7 @@ in
     configureDmsMarkets = lib.hm.dag.entryAfter ["writeBoundary"] ''
       pluginSettingsFile="$HOME/.config/DankMaterialShell/plugin_settings.json"
       barSettingsFile="$HOME/.config/DankMaterialShell/settings.json"
-      btcEurSymbols='[{"id":"BTC-EUR","name":"","provider":"yahoo","priceInterval":"1h","graphInterval":"1M","showChangeWhenPinned":true,"invert":false,"pinned":true}]'
+      btcEurSymbols='[{"id":"BTC-EUR","name":"","provider":"yahoo","priceInterval":"1h","graphInterval":"1M","showChangeWhenPinned":false,"invert":false,"pinned":true}]'
 
       ${pkgs.coreutils}/bin/mkdir -p "$HOME/.config/DankMaterialShell"
 

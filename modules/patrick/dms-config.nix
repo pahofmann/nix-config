@@ -11,6 +11,7 @@ let
     systemTrayIconTintStrength = 200;
     showWorkspaceApps = true;
     showOccupiedWorkspacesOnly = true;
+    screenPreferences.notifications = [ "DP-3" ];
     bar = {
       spacing = 3;
       innerPadding = 2;
@@ -58,6 +59,9 @@ let
           systemTrayIconTintStrength,
           showWorkspaceApps,
           showOccupiedWorkspacesOnly,
+          screenPreferences: {
+            notifications: (.screenPreferences.notifications // null)
+          },
           bar: ((first(.barConfigs[]? | select(.id == "default")) // {}) | {
             spacing,
             innerPadding,
@@ -129,6 +133,9 @@ in
          | .systemTrayIconTintStrength = 200
          | .showWorkspaceApps = true
          | .showOccupiedWorkspacesOnly = true
+         | .screenPreferences = ((.screenPreferences // {}) + {
+             notifications: ["DP-3"]
+           })
          | if (.barConfigs | type) == "array" then
              .barConfigs |= map(
                if .id == "default" then

@@ -16,4 +16,14 @@
 
   networking.hostName = "nixtop";
   patrick.danklinux.enable = true;
+
+  # Google Chrome reads managed extension policies from
+  # /etc/opt/chrome/policies.  Keep Bitwarden present without an imperative
+  # Web Store installation in the user profile.
+  programs.chromium = {
+    enable = true;
+    extensions = [
+      "nngceckbapebfimnlniiiahkandclblb" # Bitwarden Password Manager
+    ];
+  };
 }
