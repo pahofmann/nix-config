@@ -28,6 +28,19 @@ let
   });
 in
 {
+  # Keep the DMS NixOS modules in lockstep with the DMS 1.6 package.  The
+  # stable 26.05 modules target the pre-1.6 layout where the greeter lived
+  # inside dms-shell, whereas 1.6 provides it as the separate dms-greeter
+  # package.
+  disabledModules = [
+    "programs/wayland/dms-shell.nix"
+    "services/display-managers/dms-greeter.nix"
+  ];
+  imports = [
+    (inputs.nixpkgs-unstable + "/nixos/modules/programs/wayland/dms-shell.nix")
+    (inputs.nixpkgs-unstable + "/nixos/modules/services/display-managers/dms-greeter.nix")
+  ];
+
   options.patrick.danklinux.enable = lib.mkEnableOption "Dank Linux desktop";
 
   config = lib.mkIf cfg.enable {
@@ -49,14 +62,6 @@ in
         enable = true;
         restartIfChanged = true;
       };
-      enableSystemMonitoring = true;
-      enableDynamicTheming = true;
-      enableAudioWavelength = true;
-      enableClipboardPaste = true;
-      # DankCalendar is used instead of DMS' legacy khal/vdirsyncer bridge.
-      # It manages Microsoft OAuth and CalDAV credentials in the keyring.
-      enableVPN = false;
-      enableCalendarEvents = false;
     };
 
     # DankGreeter is the styled login manager. It uses greetd, not SDDM.
@@ -66,6 +71,8 @@ in
     services.desktopManager.plasma6.enable = lib.mkForce false;
     services.displayManager.dms-greeter = {
       enable = true;
+      package = dmsPkgs.dms-greeter;
+      quickshell.package = dmsPkgs.quickshell;
       compositor.name = "hyprland";
       configHome = "/home/patrick";
     };
