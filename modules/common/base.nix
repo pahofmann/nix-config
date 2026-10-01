@@ -93,8 +93,16 @@ in
     enable = true;
     theme = "kuro";
     themePackages = [ kuroPlymouthTheme ];
+    # The NVIDIA DRM device can appear a few seconds after Plymouth starts.
+    # Keep the Kuro frame alive until that framebuffer is available instead of
+    # falling back to the text console during the hand-off.
+    extraConfig = "DeviceTimeout=30";
   };
-  boot.kernelParams = [ "quiet" "loglevel=3" "rd.systemd.show_status=false" ];
+  # `boot.consoleLogLevel` owns the final loglevel kernel parameter.  Setting
+  # a second one in kernelParams is ineffective because NixOS appends its
+  # default `loglevel=4` afterwards.
+  boot.consoleLogLevel = 0;
+  boot.kernelParams = [ "quiet" "rd.systemd.show_status=false" ];
 
   nix.gc = {
     automatic = true;
