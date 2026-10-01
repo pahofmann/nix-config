@@ -959,14 +959,15 @@ in
 
   # systemd-xdg-autostart-generator starts XDG entries in parallel and ignores
   # X-GNOME-Autostart-Delay.  Start these window-rule-managed applications in
-  # a short sequence so Hyprland and the DMS rules are ready before each first
-  # toplevel window appears.
+  # Delay all application autostarts only long enough for Hyprland and DMS to
+  # become ready.  Each entry uses the same delay, so applications start in
+  # parallel rather than being artificially serialized.
   xdg.configFile = {
     "autostart/signal.desktop".text = ''
       [Desktop Entry]
       Type=Application
       Name=Signal
-      Exec=${delayedAutostart}/bin/delayed-autostart 8 ${pkgs.signal-desktop}/bin/signal-desktop --password-store=gnome-libsecret
+      Exec=${delayedAutostart}/bin/delayed-autostart 3 ${pkgs.signal-desktop}/bin/signal-desktop --password-store=gnome-libsecret
       Terminal=false
       X-GNOME-Autostart-enabled=true
     '';
@@ -974,7 +975,7 @@ in
       [Desktop Entry]
       Type=Application
       Name=WhatsApp Web
-      Exec=${delayedAutostart}/bin/delayed-autostart 12 ${pkgs.google-chrome}/bin/google-chrome-stable --profile-directory=Default --app-id=hnpfjngllnobngcgfapefoaidbinmjnm
+      Exec=${delayedAutostart}/bin/delayed-autostart 3 ${pkgs.google-chrome}/bin/google-chrome-stable --profile-directory=Default --app-id=hnpfjngllnobngcgfapefoaidbinmjnm
       Terminal=false
       X-GNOME-Autostart-enabled=true
     '';
@@ -982,7 +983,7 @@ in
       [Desktop Entry]
       Type=Application
       Name=Todoist
-      Exec=${delayedAutostart}/bin/delayed-autostart 16 ${pkgs.todoist-electron}/bin/todoist-electron
+      Exec=${delayedAutostart}/bin/delayed-autostart 3 ${pkgs.todoist-electron}/bin/todoist-electron
       Terminal=false
       X-GNOME-Autostart-enabled=true
     '';
@@ -990,7 +991,7 @@ in
       [Desktop Entry]
       Type=Application
       Name=Zoho Mail
-      Exec=${delayedAutostart}/bin/delayed-autostart 20 ${pkgs.zoho-mail-desktop}/bin/zoho-mail-desktop
+      Exec=${delayedAutostart}/bin/delayed-autostart 3 ${pkgs.zoho-mail-desktop}/bin/zoho-mail-desktop
       Terminal=false
       X-GNOME-Autostart-enabled=true
     '';
@@ -998,7 +999,7 @@ in
       [Desktop Entry]
       Type=Application
       Name=Webex
-      Exec=${delayedAutostart}/bin/delayed-autostart 24 /run/current-system/sw/bin/webex-wrapped
+      Exec=${delayedAutostart}/bin/delayed-autostart 3 /run/current-system/sw/bin/webex-wrapped
       Terminal=false
       X-GNOME-Autostart-enabled=true
     '';
@@ -1006,7 +1007,7 @@ in
       [Desktop Entry]
       Type=Application
       Name=Teams for Linux
-      Exec=${delayedAutostart}/bin/delayed-autostart 28 ${pkgs.teams-for-linux}/bin/teams-for-linux
+      Exec=${delayedAutostart}/bin/delayed-autostart 3 ${pkgs.teams-for-linux}/bin/teams-for-linux
       Terminal=false
       X-GNOME-Autostart-enabled=true
     '';
