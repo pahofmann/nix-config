@@ -512,6 +512,38 @@ let
       exec "$@"
     '';
   };
+  workspaceNames = pkgs.writeShellApplication {
+    name = "nixtop-workspace-names";
+    runtimeInputs = [ pkgs.coreutils pkgs.findutils pkgs.hyprland ];
+    text = ''
+      # Hyprland retains the numeric workspace ID while changing its display
+      # name.  The DMS bar is configured separately to display those IDs only.
+      # Wait for the compositor socket because this service is started together
+      # with the graphical session.
+      for _ in $(seq 1 30); do
+        socket=$(find "$XDG_RUNTIME_DIR/hypr" -name .socket.sock -type s -print -quit 2>/dev/null || true)
+        [ -n "$socket" ] && break
+        sleep 1
+      done
+      [ -n "''${socket:-}" ] || exit 0
+      HYPRLAND_INSTANCE_SIGNATURE="$(basename "$(dirname "$socket")")"
+      export HYPRLAND_INSTANCE_SIGNATURE
+
+      while IFS=':' read -r workspace name; do
+        hyprctl dispatch renameworkspace "$workspace" "$workspace $name" >/dev/null
+      done <<'WORKSPACES'
+      1:Browser
+      2:Hermes
+      3:Code
+      4:Citrix
+      5:Com, Work
+      6:Todoist | Zoho
+      7:Com. Priv
+      8:Steam
+      9:3D Printing
+      WORKSPACES
+    '';
+  };
 in
 
 {
@@ -1237,6 +1269,18 @@ in
       ExecStart = "${hyprlandTileSizer}/bin/nixtop-tile-sizer";
       Restart = "always";
       RestartSec = 1;
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
+  systemd.user.services.nixtop-workspace-names = {
+    Unit = {
+      Description = "Apply nixtop workspace names";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${workspaceNames}/bin/nixtop-workspace-names";
     };
     Install.WantedBy = [ "graphical-session.target" ];
   };
