@@ -92,6 +92,19 @@ let
             .[] | "\(.path | map(tostring) | join("."))\n  Nix: \(.expected | tojson)\n  GUI: \(.actual | tojson)"
           end
       '
+
+      # Also expose persistent GUI values that this module does not manage yet.
+      # This makes newly changed settings discoverable instead of silently
+      # treating them as DMS defaults.
+      jq -r --slurpfile expected ${dmsManagedSettingsJson} '
+        [to_entries[]
+         | select(.key as $key | ($expected[0] | has($key) | not))
+         | select(.key | IN("configVersion", "builtInPluginSettings", "cursorSettings", "desktopClockCustomColor", "systemMonitorCustomColor") | not)
+         | "\(.key)\n  Nix: unmanaged\n  GUI: \(.value | tojson)"]
+        | if length == 0 then empty
+          else "\nPersistent GUI settings not managed by dms-config.nix:\n" + join("\n")
+          end
+      ' "$settings_file"
     '';
   };
 in
