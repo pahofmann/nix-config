@@ -25,6 +25,11 @@ hl.config({
   misc = {
     disable_hyprland_logo = true,
     disable_splash_rendering = true,
+    -- Keep input as a second, race-free path to wake displays after resume.
+    -- This is especially important when the GPU has not finished restoring
+    -- its DRM connectors when hypridle's delayed DPMS command runs.
+    key_press_enables_dpms = true,
+    mouse_move_enables_dpms = true,
   },
 })
 
