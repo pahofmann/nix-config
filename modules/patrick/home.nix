@@ -1080,12 +1080,11 @@ in
     };
   };
 
-  # systemd-xdg-autostart-generator starts XDG entries in parallel and ignores
-  # X-GNOME-Autostart-Delay.  Start these window-rule-managed applications in
-  # Delay all application autostarts only long enough for Hyprland and DMS to
-  # become ready.  Each entry uses the same delay, so applications start in
-  # parallel rather than being artificially serialized.
-  xdg.configFile = {
+  # The desktop starts its communication/workflow applications after the
+  # session is ready.  The XPS deliberately starts no applications on login;
+  # its DMS/Hyprland session services remain available when apps are launched
+  # manually.
+  xdg.configFile = lib.optionalAttrs (host == "nixtop") {
     "autostart/signal.desktop".text = ''
       [Desktop Entry]
       Type=Application
