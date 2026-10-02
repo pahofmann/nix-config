@@ -1550,7 +1550,13 @@ in
   };
   programs.vscode = {
     enable = true;
-    package = pkgsUnstable.vscode;
+    # DMS/Hyprland is not one of Electron's recognised desktop environments.
+    # Pass the backend through VS Code's launcher too (in addition to
+    # argv.json below), so the Secret Service is selected before Code reads
+    # any user configuration or starts Settings Sync.
+    package = pkgsUnstable.vscode.override {
+      commandLineArgs = "--password-store=gnome-libsecret";
+    };
   };
 
   # Packages that should be installed to the user profile.
