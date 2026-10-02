@@ -1,4 +1,4 @@
-{ ... }:
+{ pkgs, ... }:
 {
   imports = [
     ./hardware-configuration.nix
@@ -16,6 +16,22 @@
 
   networking.hostName = "nixtop";
   patrick.danklinux.enable = true;
+
+  # DMS controls power profiles through this D-Bus service.  A desktop should
+  # always start at full performance rather than inheriting a laptop-style
+  # powersave governor.
+  services.power-profiles-daemon.enable = true;
+  systemd.services.force-performance-profile = {
+    description = "Use the performance power profile on the desktop";
+    wantedBy = [ "multi-user.target" ];
+    requires = [ "power-profiles-daemon.service" ];
+    after = [ "power-profiles-daemon.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.power-profiles-daemon}/bin/powerprofilesctl set performance";
+    };
+  };
 
   # Google Chrome reads managed extension policies from
   # /etc/opt/chrome/policies.  Keep Bitwarden present without an imperative

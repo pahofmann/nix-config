@@ -78,6 +78,19 @@ let
       fi
     done
   '';
+  citrixIcaDesktop = pkgs.writeText "citrix-ica.desktop" ''
+    [Desktop Entry]
+    Type=Application
+    Name=Citrix Workspace ICA Client
+    Comment=Open Citrix ICA connection files
+    Exec=${citrixWorkspace}/bin/wfica %f
+    TryExec=${citrixWorkspace}/bin/wfica
+    Icon=${citrixWorkspace}/opt/citrix-icaclient/icons/receiver.png
+    Terminal=false
+    MimeType=application/x-ica;application/x-ica-file;application/vnd.citrix.ica;
+    Categories=Network;RemoteAccess;
+    StartupWMClass=Wfica
+  '';
   hermesDesktop = pkgs.writeShellApplication {
     name = "hermes-desktop";
     runtimeInputs = with pkgs; [
@@ -121,12 +134,77 @@ let
     url = "https://raw.githubusercontent.com/NousResearch/hermes-agent/v2026.8.31/apps/desktop/assets/icon.png";
     hash = "sha256-1g0WTiT9z2UyEzuOpDx3ogHkuenbw5YYe1jVHYWQ71I=";
   };
-  dmsMarketsPlugin = pkgs.fetchFromGitHub {
+  dmsMarketsPluginSource = pkgs.fetchFromGitHub {
     owner = "TMS-Namespace";
     repo = "DMS-Markets-Plugin";
     rev = "1398805cd9ac425ebe742e473c1a42d6ee35f730";
     hash = "sha256-vyySCXastQa+UxEstG5Ogd9/E1fVJaTnPYsBPcx2l/8=";
   };
+  # The upstream plugin deliberately displays values without a currency
+  # suffix.  BTC-EUR is our only pinned market, so make that unit explicit
+  # while retaining the upstream formatting for every other future symbol.
+  dmsMarketsPlugin = pkgs.runCommand "dms-markets-plugin" { } ''
+    cp -a ${dmsMarketsPluginSource}/. "$out"
+    chmod -R u+w "$out"
+    substituteInPlace "$out/QML/Helpers/SymbolManager.qml" \
+      --replace-fail \
+      'var label = sym.name + " " + Helpers.formatNumber(pd.close)' \
+      'var price = Helpers.formatNumber(pd.close, sym.id === "BTC-EUR" ? 0 : undefined)
+                var label = sym.name + " " + price + (sym.id === "BTC-EUR" ? " €" : "")'
+    substituteInPlace "$out/QML/Views/HorizontalBarPill.qml" \
+      --replace-fail 'font.pixelSize: Theme.fontSizeSmall' 'font.pixelSize: Theme.fontSizeMedium'
+  '';
+  dmsBitwardenPluginSource = pkgs.fetchFromGitHub {
+    owner = "coldi1337";
+    repo = "dms-bitwarden-cli";
+    rev = "1c6aca795497ca87784a69d49a72060bfaa3a90d";
+    hash = "sha256-NlreyeMp20f9JeP0gqE6wG4CN3rYWsnJHy9v9ofgR8Q=";
+  };
+  # Phone Connect is DMS's first-party frontend for the existing KDE Connect
+  # daemon.  Keeping the daemon preserves its established device pairing.
+  dmsDankKDEConnectPluginSource = pkgs.fetchFromGitHub {
+    owner = "AvengeMedia";
+    repo = "dms-plugins";
+    rev = "e774a9756f2a50499c37a5513f28bee4ebe81d73";
+    hash = "sha256-92NjKVTslsbSVJMnxV4SaL7o0vZ1/mxaKdcRJr7EoqI=";
+  };
+  # DMS is started by the system profile, while this plugin and its tools are
+  # installed through Home Manager.  Start every plugin shell through a
+  # wrapper with an explicit Nix PATH so it works immediately, without a
+  # rebuild or relying on the service's inherited PATH.
+  dmsBitwardenShell = pkgs.writeShellApplication {
+    name = "dms-bitwarden-shell";
+    runtimeInputs = with pkgs; [
+      bitwarden-cli
+      jq
+      wl-clipboard
+      libsecret
+      glib
+      systemd
+      hyprland
+      coreutils
+      gnugrep
+      gnused
+      findutils
+      util-linux
+      xdg-utils
+    ];
+    text = ''
+      exec ${pkgs.bash}/bin/bash "$@"
+    '';
+  };
+  dmsBitwardenPlugin = pkgs.runCommand "dms-bitwarden-plugin" { } ''
+    cp -a ${dmsBitwardenPluginSource}/. "$out"
+    chmod -R u+w "$out"
+
+    substituteInPlace "$out/BitwardenModel.js" "$out/Panel.qml" \
+      --replace-fail '["bash",' '["${dmsBitwardenShell}/bin/dms-bitwarden-shell",'
+    substituteInPlace "$out/BitwardenModel.js" \
+      --replace-fail '["bw",' '["${pkgs.bitwarden-cli}/bin/bw",' \
+      --replace-fail '["secret-tool",' '["${pkgs.libsecret}/bin/secret-tool",'
+    substituteInPlace "$out/Panel.qml" \
+      --replace-fail '["wl-copy",' '["${pkgs.wl-clipboard}/bin/wl-copy",'
+  '';
   razerBatteryStatus = pkgs.writeShellApplication {
     name = "dms-razer-battery-status";
     runtimeInputs = [ pkgs.coreutils pkgs.gawk pkgs.gnugrep pkgs.gnused pkgs.jq pkgs.libnotify pkgs.systemd ];
@@ -292,7 +370,7 @@ let
       # Recalculate only when history contains a meaningful discharge slope.
       # Otherwise retain the last estimate across reconnects and reboots.
       for kind in mouse keyboard; do
-        estimate="$(${pkgs.jq}/bin/jq -r --arg kind "$kind" '
+        estimate="$(${pkgs.jq}/bin/jq -sr --arg kind "$kind" '
           [ .[] | .timestamp as $timestamp | .devices[]?
             | select(.kind == $kind and (.batteryKnown != false))
             | { timestamp: $timestamp, battery: .battery } ] as $points
@@ -362,43 +440,60 @@ let
 
       handle_open_window() {
         address="$1"
-        # The event arrives just before a client is always queryable.
-        sleep 0.1
-        is_webex="$(hyprctl clients -j 2>/dev/null | jq -r --arg address "$address" '
-          any(.[]; .mapped and .address == $address and (.class | ascii_downcase == "webex"))
-        ')"
+        # Webex sometimes emits openwindow before its Wayland app-id is
+        # visible in `hyprctl clients`.  Do not discard that event: wait a
+        # bounded time for the client metadata, then route the actual main
+        # window.  This is also deliberately resilient to a compositor
+        # restart while an event is being processed.
+        is_webex=false
+        for _ in $(seq 1 30); do
+          is_webex="$(hyprctl clients -j 2>/dev/null | jq -r --arg address "$address" '
+            any(.[]; .mapped and .address == $address and (.class | ascii_downcase == "webex"))
+          ' 2>/dev/null || true)"
+          [ "$is_webex" = true ] && break
+          sleep 0.1
+        done
         [ "$is_webex" = true ] || return 0
 
         if ! client_is_live; then
           primary_address="$address"
           move_primary_to_workspace "$address"
-          return 0
         fi
-
-        already_floating="$(hyprctl clients -j 2>/dev/null | jq -r --arg address "$address" '
-          first(.[] | select(.address == $address) | .floating) // false
-        ')"
-        if [ "$already_floating" != true ]; then
-          hyprctl eval "hl.dispatch(hl.dsp.window.float({ window = \"address:$address\", action = \"on\" }))" >/dev/null
-        fi
+        # Subsequent Webex toplevels are popups.  Do not change their
+        # floating state, geometry, or workspace: doing so makes Hyprland
+        # discard Webex's intended anchor position (for example reaction
+        # menus) and leaves the popup at the screen corner.
       }
 
       while true; do
         socket=""
         for candidate in "$XDG_RUNTIME_DIR"/hypr/*/.socket2.sock; do
           [ -S "$candidate" ] || continue
-          socket="$candidate"
-          break
+          candidate_signature="$(basename "$(dirname "$candidate")")"
+          # Hyprland does not clean every event socket after a compositor
+          # restart.  A lexical glob can therefore pick a stale socket;
+          # `hyprctl` then writes its connection error to stdout and jq exits,
+          # which previously took this service down.  Only subscribe to an
+          # instance that answers a JSON client query.
+          if HYPRLAND_INSTANCE_SIGNATURE="$candidate_signature" hyprctl clients -j 2>/dev/null | jq -e 'type == "array"' >/dev/null 2>&1; then
+            socket="$candidate"
+            HYPRLAND_INSTANCE_SIGNATURE="$candidate_signature"
+            export HYPRLAND_INSTANCE_SIGNATURE
+            break
+          fi
         done
         if [ -z "$socket" ]; then
           sleep 1
           continue
         fi
 
-        HYPRLAND_INSTANCE_SIGNATURE="$(basename "$(dirname "$socket")")"
-        export HYPRLAND_INSTANCE_SIGNATURE
         select_existing_primary
-        socat -u "UNIX-CONNECT:$socket" - | while IFS= read -r event; do
+        # An event can be delivered before Webex has settled its final
+        # floating state.  Reconnect after a short idle timeout so the outer
+        # loop also reconciles the largest Webex window (the main window)
+        # repeatedly.  Auxiliary Webex windows remain untouched because they
+        # are smaller than the tiled main window.
+        socat -T 1 -u "UNIX-CONNECT:$socket" - | while IFS= read -r event; do
           case "$event" in
             openwindow\>\>*)
               payload="''${event#openwindow>>}"
@@ -408,8 +503,7 @@ let
               ;;
             closewindow\>\>*) client_is_live || primary_address="" ;;
           esac
-        done
-        sleep 1
+        done || true
       done
     '';
   };
@@ -423,41 +517,65 @@ let
         client="$(hyprctl clients -j | jq -c --arg address "$address" 'first(.[] | select(.address == $address)) // empty')"
         [ -n "$client" ] || return
         [ "$(printf '%s' "$client" | jq -r '.floating')" = false ] || return
-        class="$(printf '%s' "$client" | jq -r '.class')"
         workspace="$(printf '%s' "$client" | jq -r '.workspace.id')"
-        case "$class" in
-          Alacritty|alacritty) wanted=0.333; ratio=0.5 ;;
-          zoho-mail-desktop) wanted=0.667; ratio=1.9 ;;
-          todoist|Todoist) wanted=0.333; ratio=0.5 ;;
-          webex|teams-for-linux|Teams-for-Linux) wanted=0.5; ratio=1.0 ;;
-          Code|code|codium|VSCodium) wanted=0.667; ratio=1.9 ;;
-          *) return ;;
-        esac
         tiled="$(hyprctl clients -j | jq -c --argjson workspace "$workspace" '[.[] | select(.mapped and (.workspace.id == $workspace) and (.floating | not))]')"
         [ "$(printf '%s' "$tiled" | jq length)" -eq 2 ] || return
+        # A Dwindle split belongs to the pair, not to either window.  Select
+        # exactly one authoritative window for each requested layout; applying
+        # a ratio to both windows sequentially would make the second call undo
+        # the first.
+        policy="$(printf '%s' "$tiled" | jq -r '
+          def has($pattern): any(.[]; (.class | test($pattern)));
+          def address($pattern): first(.[] | select(.class | test($pattern)) | .address) // empty;
+          if has("^(zoho-mail-desktop|Zoho Mail - Desktop)$") then
+            "0.667|\(address("^(zoho-mail-desktop|Zoho Mail - Desktop)$"))"
+          elif has("^(Code|code|codium|VSCodium)$") then
+            "0.667|\(address("^(Code|code|codium|VSCodium)$"))"
+          elif has("^(Alacritty|alacritty)$") then
+            "0.333|\(address("^(Alacritty|alacritty)$"))"
+          elif has("^(todoist|Todoist)$") then
+            "0.333|\(address("^(todoist|Todoist)$"))"
+          elif has("^(webex|Webex)$") and has("^(teams-for-linux|Teams-for-Linux)$") then
+            "0.5|\(address("^(webex|Webex)$"))"
+          elif has("^(teams-for-linux|Teams-for-Linux)$") then
+            "0.5|\(address("^(teams-for-linux|Teams-for-Linux)$"))"
+          else empty end
+        ')"
+        [ -n "$policy" ] || return
+        IFS='|' read -r wanted target <<< "$policy"
+        [ -n "$wanted" ] && [ -n "$target" ] || return
         active="$(hyprctl activewindow -j | jq -r '.address // empty')"
-        hyprctl dispatch focuswindow "address:$address" >/dev/null
-        hyprctl dispatch layoutmsg "splitratio $ratio exact" >/dev/null
-        sleep 0.05
-        widths="$(hyprctl clients -j | jq -r --arg address "$address" --argjson workspace "$workspace" '
-          [.[] | select(.mapped and (.workspace.id == $workspace) and (.floating | not))] as $clients
-          | ($clients | map(.size[0]) | add) as $total
-          | ($clients[] | select(.address == $address) | .size[0]) / $total
+        # Hyprland 0.55 exposes dispatchers through the Lua API.  The former
+        # text commands (`focuswindow` and `layoutmsg`) are parsed as Lua and
+        # fail, which used to terminate this service before it sized anything.
+        # For a Dwindle split, the exact value is doubled and interpreted from
+        # the focused branch: a left target gets `value / 2`, a right target
+        # gets `1 - value / 2`.  Convert the requested target width to that
+        # representation, but never call `swapsplit` (which moves windows).
+        ratio="$(printf '%s' "$tiled" | jq -r --arg address "$target" --argjson wanted "$wanted" '
+          first(.[] | select(.address == $address)) as $target
+          | first(.[] | select(.address != $address)) as $other
+          | if $target.at[0] > $other.at[0]
+            then (2 * (1 - $wanted))
+            else (2 * $wanted)
+            end
         ')"
-        swap="$(jq -n --argjson width "$widths" --argjson wanted "$wanted" '
-          if (($width - $wanted) | fabs) > (($width - (1 - $wanted)) | fabs) then true else false end
-        ')"
-        [ "$swap" = true ] && hyprctl dispatch layoutmsg swapsplit >/dev/null
-        [ -n "$active" ] && hyprctl dispatch focuswindow "address:$active" >/dev/null
+        hyprctl eval "hl.dispatch(hl.dsp.focus({ window = \"address:$target\" }))" >/dev/null || return
+        hyprctl eval "hl.dispatch(hl.dsp.layout(\"splitratio $ratio exact\"))" >/dev/null || return
+        [ -n "$active" ] && hyprctl eval "hl.dispatch(hl.dsp.focus({ window = \"address:$active\" }))" >/dev/null || true
       }
       while true; do
         socket="$(find "$XDG_RUNTIME_DIR"/hypr -name .socket2.sock -type s 2>/dev/null | head -n1)"
         [ -n "$socket" ] || { sleep 1; continue; }
+        # Also reconcile windows which were already open when the service was
+        # restarted or when the compositor recreated its event socket.
+        hyprctl clients -j 2>/dev/null | jq -r '.[] | select(.mapped and (.floating | not)) | .address' | \
+          while IFS= read -r address; do apply_size "$address" || true; done
         socat -u "UNIX-CONNECT:$socket" - | while IFS= read -r event; do
           case "$event" in
-            openwindow\>\>*) payload="''${event#openwindow>>}"; apply_size "0x''${payload%%,*}" ;;
+            openwindow\>\>*) payload="''${event#openwindow>>}"; apply_size "0x''${payload%%,*}" || true ;;
           esac
-        done
+        done || true
       done
     '';
   };
@@ -622,25 +740,19 @@ in
       X-GNOME-UsesNotifications=true
       StartupNotify=true
     '';
-    # The Citrix package provides the ICA MIME definition but its desktop
-    # entry is not reliably discovered from the wrapped Nix store package.
-    # Install an explicit user entry so Dolphin can offer and remember it.
-    ".local/share/applications/wfica.desktop" = {
-      force = true;
-      text = ''
-        [Desktop Entry]
-        Type=Application
-        Name=Citrix Workspace ICA Client
-        Comment=Open Citrix ICA connection files
-        Exec=${citrixWorkspace}/bin/wfica %f
-        TryExec=${citrixWorkspace}/bin/wfica
-        Icon=receiver
-        Terminal=false
-        MimeType=application/x-ica;
-        Categories=Network;RemoteAccess;
-        StartupWMClass=Wfica
-      '';
-    };
+    # KService (and therefore Dolphin's "Open With" dialog) requires an XDG
+    # applications menu to discover desktop entries.  DANK Shell deliberately
+    # does not install Plasma, so provide the menu definition itself without
+    # bringing a Plasma session into the runtime closure.
+    ".config/menus/applications.menu".text = builtins.readFile
+      "${pkgs.kdePackages.plasma-workspace}/etc/xdg/menus/plasma-applications.menu";
+    # Override the package's legacy ICA engine entry.  `Hidden=true` is the
+    # Desktop Entry standard's user-level removal marker, so lower-priority
+    # wfica.desktop entries cannot leak into portal app choosers.
+    ".local/share/applications/wfica.desktop".text = ''
+      [Desktop Entry]
+      Hidden=true
+    '';
     # Hyprland is not recognised by Chromium's automatic keyring detection.
     # Select the session's Secret Service explicitly rather than falling back
     # to the insecure basic_text store.
@@ -690,6 +802,17 @@ in
     ".config/DankMaterialShell/plugins/markets" = {
       source = dmsMarketsPlugin;
       recursive = true;
+    };
+    # The vault remains under the official Bitwarden CLI and the keyring; this
+    # declaratively installs only the DMS panel itself.
+    ".config/DankMaterialShell/plugins/bitwarden" = {
+      source = dmsBitwardenPlugin;
+      recursive = true;
+    };
+    ".config/DankMaterialShell/plugins/dankKDEConnect" = {
+      source = "${dmsDankKDEConnectPluginSource}/DankKDEConnect";
+      recursive = true;
+      force = true;
     };
     ".config/DankMaterialShell/plugins/razerBattery/plugin.json".text = builtins.toJSON {
       id = "razerBattery";
@@ -787,10 +910,10 @@ in
               if (minutes >= 24 * 60) {
                   var days = Math.floor(minutes / (24 * 60))
                   var remainingHours = Math.floor((minutes % (24 * 60)) / 60)
-                  return "~" + days + "d " + remainingHours + "h left"
+                  return days + "d " + remainingHours + "h left"
               }
               var hours = Math.floor(minutes / 60)
-              return hours > 0 ? "~" + hours + "h " + (minutes % 60) + "m left" : "~" + minutes + "m left"
+              return hours > 0 ? hours + "h " + (minutes % 60) + "m left" : minutes + "m left"
           }
 
           Process {
@@ -893,10 +1016,10 @@ in
                                           ? "not connected"
                                           : parent.parent.current.charging
                                               ? (parent.parent.current.batteryKnown
-                                                  ? Math.round(parent.parent.current.battery) + "% · charging"
+                                                  ? Math.round(parent.parent.current.battery) + "% charging"
                                                   : "charging")
                                               : parent.parent.current.batteryKnown
-                                                  ? Math.round(parent.parent.current.battery) + "% · " + root.remainingTime(parent.parent.modelData.kind)
+                                                  ? Math.round(parent.parent.current.battery) + "% " + root.remainingTime(parent.parent.modelData.kind)
                                                   : "battery unavailable"
                                       color: root.deviceColor(parent.parent.current)
                                       font.pixelSize: Theme.fontSizeMedium
@@ -1011,6 +1134,23 @@ in
       Terminal=false
       X-GNOME-Autostart-enabled=true
     '';
+    # StreamController's own generated entry is mutable and can disappear on
+    # an update.  Keep the background controller under Nix ownership; its
+    # profiles intentionally remain in StreamController's native data path
+    # (~/.var/app/com.core447.StreamController/data), never in the store.
+    "autostart/StreamController.desktop" = {
+      force = true;
+      text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=StreamController
+      Comment=Start Stream Deck profiles in the background
+      TryExec=${pkgs.streamcontroller}/bin/streamcontroller
+      Exec=${delayedAutostart}/bin/delayed-autostart 3 ${pkgs.streamcontroller}/bin/streamcontroller -b
+      Terminal=false
+      X-GNOME-Autostart-enabled=true
+    '';
+    };
   };
 
   home.activation = {
@@ -1018,9 +1158,63 @@ in
     # respective applications.  Home Manager's xdg.mimeApps module would take
     # over both mimeapps.list locations and therefore collide with those files.
     # Reassert only our Citrix association after the desktop entry is present.
-    configureCitrixMimeAssociation = lib.hm.dag.entryAfter ["writeBoundary"] ''
-      $DRY_RUN_CMD ${pkgs.xdg-utils}/bin/xdg-mime default wfica.desktop application/x-ica
-    '';
+    configureCitrixMimeAssociation = lib.hm.dag.entryAfter ["linkGeneration"] (lib.optionalString (host == "nixtop") ''
+      # Keep a regular user desktop file: it is reliably discoverable by KDE
+      # even though the Nix package itself is wrapped.
+      $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -Dm644 ${citrixIcaDesktop} \
+        "$HOME/.local/share/applications/citrix-ica.desktop"
+
+      # The MIME Apps specification distinguishes the default handler from
+      # an application's membership in the chooser.  `xdg-mime default` only
+      # writes the former.  Add Citrix to [Added Associations] as well, so
+      # KOpenWithDialog/Dolphin offers it instead of falling back to editors.
+      mimeapps="$HOME/.config/mimeapps.list"
+      if [ ! -e "$mimeapps" ]; then
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -Dm644 /dev/null "$mimeapps"
+      fi
+      if [ -z "''${DRY_RUN:-}" ]; then
+        mimeapps_tmp="$(${pkgs.coreutils}/bin/mktemp "$mimeapps.XXXXXX")"
+        ${pkgs.gawk}/bin/awk '
+          function add_citrix() {
+            print "application/x-ica=citrix-ica.desktop;"
+            print "application/x-ica-file=citrix-ica.desktop;"
+            print "application/vnd.citrix.ica=citrix-ica.desktop;"
+          }
+          # Drop our prior entries from every section before adding one
+          # canonical association block.  The `pplication` alternative also
+          # repairs an older, malformed activation output.
+          /^(application|pplication)\/x-ica=/ { next }
+          /^(application|pplication)\/x-ica-file=/ { next }
+          /^(application|pplication)\/vnd\.citrix\.ica=/ { next }
+          /^\[Added Associations\]$/ {
+            print
+            add_citrix()
+            has_added_associations = 1
+            next
+          }
+          { print }
+          END {
+            if (!has_added_associations) {
+              print ""
+              print "[Added Associations]"
+              add_citrix()
+            }
+          }
+        ' "$mimeapps" > "$mimeapps_tmp"
+        ${pkgs.coreutils}/bin/mv "$mimeapps_tmp" "$mimeapps"
+      fi
+      $DRY_RUN_CMD ${pkgs.xdg-utils}/bin/xdg-mime default citrix-ica.desktop application/x-ica
+      $DRY_RUN_CMD ${pkgs.xdg-utils}/bin/xdg-mime default citrix-ica.desktop application/x-ica-file
+      $DRY_RUN_CMD ${pkgs.xdg-utils}/bin/xdg-mime default citrix-ica.desktop application/vnd.citrix.ica
+      $DRY_RUN_CMD ${pkgs.desktop-file-utils}/bin/update-desktop-database "$HOME/.local/share/applications"
+    '');
+    # Chromium opens downloaded files via the OpenURI portal.  The portal
+    # otherwise asks three times before trusting a chosen handler; Citrix is
+    # intentionally a single, declarative handler, so record it as confirmed.
+    configureChromeCitrixPortal = lib.hm.dag.entryAfter ["configureCitrixMimeAssociation"] (lib.optionalString (host == "nixtop") ''
+      $DRY_RUN_CMD ${pkgs.flatpak}/bin/flatpak permission-set \
+        desktop-used-apps application/x-ica com.google.Chrome citrix-ica,3,3
+    '');
     updateIconCache = lib.hm.dag.entryAfter ["writeBoundary"] ''
       $DRY_RUN_CMD ${pkgs.gtk3}/bin/gtk-update-icon-cache $VERBOSE_ARG -t -f ~/.local/share/icons/hicolor
     '';
@@ -1041,7 +1235,7 @@ in
         $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$settingsFile"
       fi
     '';
-    configureDmsBarDisplay = lib.hm.dag.entryAfter ["writeBoundary"] ''
+    configureDmsBarDisplay = lib.hm.dag.entryAfter ["writeBoundary"] (lib.optionalString (host == "nixtop") ''
       settingsFile="$HOME/.config/DankMaterialShell/settings.json"
 
       if [ -f "$settingsFile" ]; then
@@ -1056,7 +1250,7 @@ in
           "$settingsFile" > "$tmpFile"
         $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$settingsFile"
       fi
-    '';
+    '');
     configureDmsWorkspaceLabels = lib.hm.dag.entryAfter ["writeBoundary"] ''
       settingsFile="$HOME/.config/DankMaterialShell/settings.json"
 
@@ -1070,7 +1264,7 @@ in
     '';
     # DMS keeps wallpaper state separately from its visual settings. Preserve
     # the wallpaper path chosen in the UI and only enable its built-in folder
-    # rotation at the requested fifteen-minute interval.
+    # rotation at the requested twelve-hour interval.
     configureDmsWallpaperCycling = lib.hm.dag.entryAfter ["writeBoundary"] ''
       sessionFile="$HOME/.local/state/DankMaterialShell/session.json"
 
@@ -1079,15 +1273,14 @@ in
         ${pkgs.jq}/bin/jq \
           '.wallpaperCyclingEnabled = true
            | .wallpaperCyclingMode = "interval"
-           | .wallpaperCyclingInterval = 86400' \
+           | .wallpaperCyclingInterval = 43200' \
           "$sessionFile" > "$tmpFile"
         $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$sessionFile"
       fi
     '';
     configureDmsMarkets = lib.hm.dag.entryAfter ["writeBoundary"] ''
       pluginSettingsFile="$HOME/.config/DankMaterialShell/plugin_settings.json"
-      barSettingsFile="$HOME/.config/DankMaterialShell/settings.json"
-      btcEurSymbols='[{"id":"BTC-EUR","name":"","provider":"yahoo","priceInterval":"1h","graphInterval":"1M","showChangeWhenPinned":false,"invert":false,"pinned":true}]'
+      btcEurSymbols='[{"id":"BTC-EUR","name":"BTC","provider":"yahoo","priceInterval":"1h","graphInterval":"1M","showChangeWhenPinned":false,"invert":false,"pinned":true}]'
 
       ${pkgs.coreutils}/bin/mkdir -p "$HOME/.config/DankMaterialShell"
 
@@ -1104,31 +1297,9 @@ in
           '{ markets: { enabled: true, symbols: ($btcEurSymbols | tojson) } }' > "$tmpFile"
       fi
       $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$pluginSettingsFile"
-
-      if [ -f "$barSettingsFile" ]; then
-        tmpFile="$(${pkgs.coreutils}/bin/mktemp)"
-        ${pkgs.jq}/bin/jq \
-          'if (.barConfigs | type) == "array" then
-             .barConfigs |= map(
-               if .id == "default" then
-                 (.rightWidgets // []) as $widgets
-                 | ($widgets - ["markets"]) as $withoutMarkets
-                 | ($withoutMarkets | index("systemTray")) as $trayIndex
-                 | .rightWidgets = (
-                     if $trayIndex == null then $withoutMarkets + ["markets"]
-                     else $withoutMarkets[0:$trayIndex] + ["markets"] + $withoutMarkets[$trayIndex:]
-                     end
-                   )
-               else . end
-             )
-           else . end' \
-          "$barSettingsFile" > "$tmpFile"
-        $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$barSettingsFile"
-      fi
     '';
     configureDmsRazerBattery = lib.hm.dag.entryAfter ["writeBoundary"] ''
       pluginSettingsFile="$HOME/.config/DankMaterialShell/plugin_settings.json"
-      barSettingsFile="$HOME/.config/DankMaterialShell/settings.json"
 
       ${pkgs.coreutils}/bin/mkdir -p "$HOME/.config/DankMaterialShell"
       tmpFile="$(${pkgs.coreutils}/bin/mktemp)"
@@ -1139,27 +1310,6 @@ in
         ${pkgs.jq}/bin/jq -n '{ razerBattery: { enabled: true } }' > "$tmpFile"
       fi
       $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$pluginSettingsFile"
-
-      if [ -f "$barSettingsFile" ]; then
-        tmpFile="$(${pkgs.coreutils}/bin/mktemp)"
-        ${pkgs.jq}/bin/jq \
-          'if (.barConfigs | type) == "array" then
-             .barConfigs |= map(
-               if .id == "default" then
-                 (.rightWidgets // []) as $widgets
-                 | ($widgets - ["razerBattery"]) as $withoutRazerBattery
-                 | ($withoutRazerBattery | index("systemTray")) as $trayIndex
-                 | .rightWidgets = (
-                     if $trayIndex == null then $withoutRazerBattery + ["razerBattery"]
-                     else $withoutRazerBattery[0:($trayIndex + 1)] + ["razerBattery"] + $withoutRazerBattery[($trayIndex + 1):]
-                     end
-                   )
-               else . end
-             )
-           else . end' \
-          "$barSettingsFile" > "$tmpFile"
-        $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$barSettingsFile"
-      fi
     '';
   } // lib.optionalAttrs (host == "nixtop") {
     ensureCitrixGlWorkaround = lib.hm.dag.entryAfter ["writeBoundary"] ''
@@ -1291,15 +1441,15 @@ in
   # and stored in GNOME Keyring, never in this repository.
   systemd.user.services.dankcalendar = {
     Unit = {
-      Description = "DankCalendar background daemon";
+      Description = "DankCalendar session";
       After = [ "graphical-session.target" ];
       PartOf = [ "graphical-session.target" ];
     };
     Service = {
-      # `dcal run --daemon` forks and makes systemd consider the unit finished.
-      # The dedicated daemon command stays in the foreground, so systemd can
-      # supervise and restart the calendar backend correctly.
-      ExecStart = "${dankCalendar}/bin/dcal daemon";
+      # `dcal daemon` has no UI, so `dcal show` and DMS's calendar action
+      # cannot display a window.  The upstream session unit keeps the UI,
+      # tray, and backend in one supervised foreground process.
+      ExecStart = "${dankCalendar}/bin/dcal run --session --hidden";
       Restart = "on-failure";
       RestartSec = 3;
     };
@@ -1414,8 +1564,20 @@ in
     discord
     teams-for-linux
     pass # secret management
+    bitwarden-cli
+    libsecret
     nextcloud-client
     hermesDesktop
+
+    # Runtime tools for DMS Quick Capture: recording, annotations, OCR,
+    # QR-code reading, and export formats.
+    gpu-screen-recorder
+    wf-recorder
+    ffmpeg
+    imagemagick
+    img2pdf
+    tesseract
+    zbar
 
     #dev
     direnv

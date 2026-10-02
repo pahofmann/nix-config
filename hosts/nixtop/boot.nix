@@ -7,7 +7,9 @@
 
   boot.kernelParams = [
     "video.only_lcd=0"
-    "console=tty0"
+    # DankGreeter owns VT1.  Keep kernel/system output on an unused VT so the
+    # greeter-to-Hyprland hand-off cannot reveal stale console text on VT1.
+    "console=tty12"
     "fbcon=map:0"
     "nvidia.NVreg_PreserveVideoMemoryAllocations=1"
     "nvidia.NVreg_TemporaryFilePath=/var/tmp"

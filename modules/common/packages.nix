@@ -29,10 +29,18 @@ let
   '';
 
   webexWrapped = pkgs.writeShellScriptBin "webex-wrapped" ''
-    # Keep the Hyprland session environment intact.  In particular, removing
-    # WAYLAND_DISPLAY makes Webex fall back to a nonexistent wayland-0 socket
-    # when the actual session uses a different socket name.
-    exec ${pkgs.webex}/bin/webex "$@"
+    # Webex's native Wayland (Chromium/Ozone) backend misplaces xdg-popups on
+    # Hyprland: reaction menus are positioned at the monitor origin instead
+    # of beside their triggering control.  Use its stable X11 backend through
+    # XWayland.  Keep WAYLAND_DISPLAY intact; the explicit Ozone/Qt settings
+    # select X11 without making Webex look for a nonexistent wayland-0 socket.
+    export NIXOS_OZONE_WL=0
+    export ELECTRON_OZONE_PLATFORM_HINT=x11
+    export OZONE_PLATFORM=x11
+    export QT_QPA_PLATFORM=xcb
+    export GDK_BACKEND=x11
+    export MOZ_ENABLE_WAYLAND=0
+    exec ${pkgs.webex}/bin/webex --ozone-platform=x11 "$@"
   '';
 in
 {

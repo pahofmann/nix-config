@@ -43,6 +43,7 @@ bind("Super_R", hl.dsp.exec_cmd("dms ipc call spotlight toggle"), "Open applicat
 bind(mod .. " + SPACE", hl.dsp.exec_cmd("dms ipc call spotlight toggle"), "Open application launcher")
 bind(mod .. " + TAB", hl.dsp.exec_cmd("dms ipc call hypr toggleOverview"), "Toggle workspace overview")
 bind(mod .. " + V", hl.dsp.exec_cmd("dms ipc call clipboard toggle"), "Toggle clipboard history")
+bind(mod .. " + PERIOD", hl.dsp.exec_cmd("dms ipc call emojiPicker toggle"), "Toggle emoji picker")
 bind(mod .. " + SLASH", hl.dsp.exec_cmd("dms ipc call hypr toggleBinds"), "Show keyboard shortcuts")
 bind(mod .. " + SHIFT + Q", hl.dsp.exec_cmd("dms ipc call powermenu toggle"), "Open power menu")
 
@@ -107,18 +108,9 @@ bind(mod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }), "Previous worksp
 bind(mod .. " + mouse:272", hl.dsp.window.drag(), "Move window with mouse", { mouse = true })
 bind(mod .. " + mouse:273", hl.dsp.window.resize(), "Resize window with mouse", { mouse = true })
 
--- Grimblast normally passes window rectangles to slurp, making a click snap
--- to a window. Clear those rectangles for the primary shortcut so it always
--- draws a free desktop region; Shift+Print retains the useful snap behaviour.
-local screenshot_free_region = hl.dsp.exec_cmd(
-  "sh -c \"SLURP_RECTS='' grimblast --freeze save area - | swappy -f -\""
-)
-local screenshot_window_or_region = hl.dsp.exec_cmd(
-  "sh -c 'grimblast --freeze save area - | swappy -f -'"
-)
-bind("PRINT", screenshot_free_region, "Select and annotate free screenshot area")
-bind("SHIFT + PRINT", screenshot_window_or_region, "Select window or area and annotate screenshot")
-bind(mod .. " + SHIFT + S", screenshot_free_region, "Select and annotate free screenshot area")
+-- Quick Capture replaces the former Grimblast/Swappy shortcuts.  Print opens
+-- its region selector and annotation editor in one step.
+bind("PRINT", hl.dsp.exec_cmd("dms ipc call quickCapture screenshot region edit"), "Capture and annotate screenshot area")
 bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("dms ipc call audio increment 5"), "Increase volume", { locked = true, repeating = true })
 bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("dms ipc call audio decrement 5"), "Decrease volume", { locked = true, repeating = true })
 bind("XF86AudioMute", hl.dsp.exec_cmd("dms ipc call audio mute"), "Toggle volume mute", { locked = true })

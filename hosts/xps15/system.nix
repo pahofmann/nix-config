@@ -25,7 +25,12 @@
   # Intel drives the panel; NVIDIA is available explicitly through PRIME
   # render-offload for GPU-intensive applications.
   services.xserver.videoDrivers = [ "nvidia" ];
-  boot.kernelParams = [ "nvidia-drm.modeset=1" ];
+  # Keep kernel messages off the greeter VT, matching the desktop's
+  # flicker-free DankGreeter hand-off.
+  boot.kernelParams = [ "nvidia-drm.modeset=1" "console=tty12" ];
+  # DMS exposes the profile selector on both machines.  Unlike the desktop,
+  # the laptop is free to select an energy-saving profile on battery.
+  services.power-profiles-daemon.enable = true;
   hardware.graphics = {
     enable = true;
     enable32Bit = true;

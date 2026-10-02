@@ -14,17 +14,13 @@ hl.monitor({
 })
 hl.monitor({
     output = "desc:XEC MFG27F4Q",
-    mode = "2560x1440@165.00Hz",
+    mode = "2560x1440@144.00Hz",
     position = "3440x0",
     scale = 1,
-    vrr = 1,
-    bitdepth = 10,
-    supports_wide_color = 0,
-    supports_hdr = 0,
-    cm = "hdredid",
-    sdrbrightness = 1.2,
-    sdrsaturation = 1.0,
-    sdr_max_luminance = 200,
+    -- Keep the proven stable 144 Hz mode, but use SDR: HDR tone mapping made
+    -- this panel substantially darker than the primary display.
+    vrr = 0,
+    bitdepth = 8,
 })
 
 -- Workspaces remain dynamic; these rules restore the useful role-based layout
@@ -70,7 +66,7 @@ local app_workspace_rules = {
     },
     {
         name = "nixtop-citrix",
-        match = { class = "^(SelfService|selfservice|WFICA|wfica|Citrix Workspace)$" },
+        match = { class = "^(SelfService|selfservice|WFICA|Wfica|wfica|Citrix Workspace)$" },
         workspace = "4",
     },
     -- Webex exposes its main window and popups with identical Wayland
