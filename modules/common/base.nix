@@ -62,7 +62,13 @@ in
     inherit (config.nixpkgs) config;
   };
 
-  networking.networkmanager.enable = true;
+  networking.networkmanager = {
+    enable = true;
+    # Preserve per-connection routing domains.  The Dahoam WireGuard profile
+    # uses this for split DNS: only hfmnn.com is sent to its VPN DNS server.
+    dns = "systemd-resolved";
+  };
+  services.resolved.enable = true;
 
   time.hardwareClockInLocalTime = true;
   time.timeZone = "Europe/Berlin";
