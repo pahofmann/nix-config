@@ -1,0 +1,21 @@
+#!/run/current-system/sw/bin/bash
+# Recreate the display pipeline after system resume.  NVIDIA can lose the HDR
+# metadata infoframe while Hyprland still believes the output is in HDR mode.
+# In that state the Dell OLED looks permanently washed out.  Toggling only its
+# colour-management preset re-sends the infoframe without moving windows or
+# changing the monitor layout.
+set -eu
+
+sleep 2
+/run/current-system/sw/bin/hyprctl dispatch 'hl.dsp.dpms({ action = "enable" })'
+
+if ! /run/current-system/sw/bin/hyprctl monitors -j | /run/current-system/sw/bin/jq -e \
+  '.[] | select(.description == "Dell Inc. AW3423DWF FTM62S3" and .colorManagementPreset == "hdr")' \
+  >/dev/null; then
+  exit 0
+fi
+
+sleep 1
+/run/current-system/sw/bin/hyprctl eval 'hl.monitor({ output = "desc:Dell Inc. AW3423DWF FTM62S3", mode = "3440x1440@164.90Hz", position = "0x0", scale = 1, vrr = 0, bitdepth = 10, supports_wide_color = 1, supports_hdr = 1, cm = "srgb" })'
+sleep 1
+/run/current-system/sw/bin/hyprctl eval 'hl.monitor({ output = "desc:Dell Inc. AW3423DWF FTM62S3", mode = "3440x1440@164.90Hz", position = "0x0", scale = 1, vrr = 0, bitdepth = 10, supports_wide_color = 1, supports_hdr = 1, cm = "hdr", sdr_min_luminance = 0.005, sdr_max_luminance = 203, sdrbrightness = 1.0, sdrsaturation = 1.0 })'
