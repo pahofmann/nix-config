@@ -44,9 +44,13 @@ in
   options.patrick.danklinux.enable = lib.mkEnableOption "Dank Linux desktop";
 
   config = lib.mkIf cfg.enable {
-    # Use only native NixOS 26.05 Dank modules and the compositor they support.
+    # Hyprland 0.55 has a renderer regression where HDR screencopies can show
+    # stale/closed windows.  Keep the OS on its stable channel, but use the
+    # already pinned 0.56 compositor and matching portal from unstable.
     programs.hyprland = {
       enable = true;
+      package = dmsPkgs.hyprland;
+      portalPackage = dmsPkgs.xdg-desktop-portal-hyprland;
       xwayland.enable = true;
       # DankGreeter launches the Hyprland session through UWSM.  Enabling it
       # installs the required user-systemd template units, including
