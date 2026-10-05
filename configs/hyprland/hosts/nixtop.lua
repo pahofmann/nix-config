@@ -11,6 +11,13 @@ hl.monitor({
     supports_wide_color = 1,
     supports_hdr = 1,
     cm = "hdr",
+    -- The desktop is SDR content mapped into the HDR PQ output.  OLED black
+    -- must be near zero; Hyprland's generic 0.20 default visibly lifts it to
+    -- grey.  203 nits is the HDR reference-white level for SDR UI content.
+    sdr_min_luminance = 0.005,
+    sdr_max_luminance = 203,
+    sdrbrightness = 1.0,
+    sdrsaturation = 1.0,
 })
 hl.monitor({
     output = "desc:XEC MFG27F4Q",
