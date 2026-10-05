@@ -55,6 +55,7 @@ in
     gparted
     exfatprogs
     inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.balena-etcher
+    inputs.self.packages.${pkgs.stdenv.hostPlatform.system}.opencode-desktop
     parted
     tmux
     k9s

@@ -17,6 +17,7 @@
         (final: prev: {
           balena-etcher = final.callPackage ./pkgs/balena-etcher.nix { };
           exiled-exchange-2 = final.callPackage ./pkgs/exiled-exchange-2.nix { };
+          opencode-desktop = final.callPackage ./pkgs/opencode-desktop.nix { };
         })
       ];
       mkHost = host: nixpkgs.lib.nixosSystem {
@@ -44,7 +45,7 @@
     {
       formatter.${system} = nixpkgs.legacyPackages.${system}.alejandra;
       packages.${system} = {
-        inherit (pkgs) balena-etcher exiled-exchange-2;
+        inherit (pkgs) balena-etcher exiled-exchange-2 opencode-desktop;
         default = pkgs.exiled-exchange-2;
       };
       nixosConfigurations = {
