@@ -1205,6 +1205,20 @@ in
       $DRY_RUN_CMD ${pkgs.xdg-utils}/bin/xdg-mime default citrix-ica.desktop application/x-ica
       $DRY_RUN_CMD ${pkgs.xdg-utils}/bin/xdg-mime default citrix-ica.desktop application/x-ica-file
       $DRY_RUN_CMD ${pkgs.xdg-utils}/bin/xdg-mime default citrix-ica.desktop application/vnd.citrix.ica
+      # Ark is Dolphin's native archive manager.  Keep archive double-clicks
+      # and the file-manager's extract/compress actions on the same tool.
+      for mime in \
+        application/zip \
+        application/x-7z-compressed \
+        application/x-tar \
+        application/x-compressed-tar \
+        application/gzip \
+        application/x-bzip2 \
+        application/x-xz \
+        application/x-zstd \
+        application/vnd.rar; do
+        $DRY_RUN_CMD ${pkgs.xdg-utils}/bin/xdg-mime default org.kde.ark.desktop "$mime"
+      done
       $DRY_RUN_CMD ${pkgs.desktop-file-utils}/bin/update-desktop-database "$HOME/.local/share/applications"
     '');
     # Chromium opens downloaded files via the OpenURI portal.  The portal
@@ -1597,6 +1611,7 @@ in
     citrixWorkspace
     kdePackages.konsole
     kdePackages.dolphin
+    kdePackages.ark
     gcc
     gnumake
     procps
