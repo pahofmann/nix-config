@@ -1,0 +1,38 @@
+#!/run/current-system/sw/bin/bash
+# Hyprland 0.55/NVIDIA currently omits application surfaces from screencopies
+# on an HDR output.  Capture in sRGB, restore HDR immediately afterwards, then
+# hand the resulting PNG back to Quick Capture's normal annotation editor.
+set -u
+
+hyprctl=/run/current-system/sw/bin/hyprctl
+jq=/run/current-system/sw/bin/jq
+dms=/run/current-system/sw/bin/dms
+sleep_bin=/run/current-system/sw/bin/sleep
+tmp_dir=${XDG_RUNTIME_DIR:-/tmp}
+capture_name="dms_capture_$(/run/current-system/sw/bin/date +%s%N).png"
+capture_path="$tmp_dir/$capture_name"
+hdr_was_enabled=false
+
+restore_hdr() {
+  [ "$hdr_was_enabled" = true ] || return 0
+  "$hyprctl" eval 'hl.monitor({ output = "desc:Dell Inc. AW3423DWF FTM62S3", mode = "3440x1440@164.90Hz", position = "0x0", scale = 1, vrr = 0, bitdepth = 10, supports_wide_color = 1, supports_hdr = 1, cm = "hdr", sdr_min_luminance = 0.005, sdr_max_luminance = 203, sdrbrightness = 1.0, sdrsaturation = 1.0 })' >/dev/null
+}
+
+if "$hyprctl" monitors -j | "$jq" -e \
+  '.[] | select(.description == "Dell Inc. AW3423DWF FTM62S3" and .colorManagementPreset == "hdr")' \
+  >/dev/null; then
+  hdr_was_enabled=true
+  trap restore_hdr EXIT INT TERM
+  "$hyprctl" eval 'hl.monitor({ output = "desc:Dell Inc. AW3423DWF FTM62S3", mode = "3440x1440@164.90Hz", position = "0x0", scale = 1, vrr = 0, bitdepth = 10, supports_wide_color = 1, supports_hdr = 1, cm = "srgb" })' >/dev/null
+  "$sleep_bin" 0.2
+fi
+
+capture_json="$("$dms" screenshot region --no-clipboard --no-notify --dir "$tmp_dir" --filename "$capture_name" --format png --cursor off --json)"
+status="$(printf '%s' "$capture_json" | "$jq" -r '.status // "error"' 2>/dev/null)"
+captured_path="$(printf '%s' "$capture_json" | "$jq" -r '.path // empty' 2>/dev/null)"
+
+restore_hdr
+trap - EXIT INT TERM
+
+[ "$status" = success ] && [ -n "$captured_path" ] || exit 0
+"$dms" ipc call quickCapture openImage "$captured_path" edit >/dev/null

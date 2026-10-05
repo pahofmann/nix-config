@@ -113,9 +113,9 @@ bind(mod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }), "Previous worksp
 bind(mod .. " + mouse:272", hl.dsp.window.drag(), "Move window with mouse", { mouse = true })
 bind(mod .. " + mouse:273", hl.dsp.window.resize(), "Resize window with mouse", { mouse = true })
 
--- Quick Capture replaces the former Grimblast/Swappy shortcuts.  Print opens
--- its region selector and annotation editor in one step.
-bind("PRINT", hl.dsp.exec_cmd("dms ipc call quickCapture screenshot region edit"), "Capture and annotate screenshot area")
+-- Quick Capture replaces the former Grimblast/Swappy shortcuts.  The helper
+-- works around the NVIDIA HDR screencopy bug, then opens the normal editor.
+bind("PRINT", hl.dsp.exec_cmd("/home/patrick/.config/hypr/quick-capture"), "Capture and annotate screenshot area")
 bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("dms ipc call audio increment 5"), "Increase volume", { locked = true, repeating = true })
 bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("dms ipc call audio decrement 5"), "Decrease volume", { locked = true, repeating = true })
 bind("XF86AudioMute", hl.dsp.exec_cmd("dms ipc call audio mute"), "Toggle volume mute", { locked = true })
