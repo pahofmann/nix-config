@@ -151,6 +151,34 @@ in
     batteryNotifier.enable = false;
   };
 
+  # The Viper Ultimate occasionally falls back from OpenRazer's driver mode
+  # (03 00) to device mode (00 00) after a wireless power transition.  In
+  # device mode its wheel switch no longer emits BTN_MIDDLE.  The transition
+  # has no udev event, so keep the correction deliberately small and local:
+  # one sysfs comparison every two seconds, only writing when it changed.
+  systemd.services.razer-viper-middle-click = {
+    description = "Restore Razer Viper Ultimate input driver mode";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "systemd-udev-settle.service" ];
+    path = [ pkgs.coreutils pkgs.diffutils ];
+    serviceConfig = {
+      Type = "simple";
+      Restart = "always";
+      RestartSec = "2s";
+    };
+    script = ''
+      shopt -s nullglob
+      while true; do
+        for mode in /sys/bus/hid/drivers/razermouse/0003:1532:007[AaBb].*/device_mode; do
+          if ! cmp -s "$mode" <(printf '\003\000'); then
+            printf '\003\000' > "$mode"
+          fi
+        done
+        sleep 2
+      done
+    '';
+  };
+
   hardware.bluetooth = {
     enable = true;
     powerOnBoot = true;
