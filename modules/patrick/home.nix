@@ -1329,6 +1329,33 @@ in
       fi
       $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$pluginSettingsFile"
     '';
+    # Keep StreamController's existing MicMute action (including its red
+    # Stream Deck status icon) and append the hardware LED synchronisation.
+    # Profiles deliberately live in StreamController's mutable data directory.
+    configureStreamDeckArctisMicLed = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      pageFile="$HOME/.var/app/com.core447.StreamController/data/pages/Home.json"
+
+      if [ -f "$pageFile" ]; then
+        tmpFile="$(${pkgs.coreutils}/bin/mktemp)"
+        ${pkgs.jq}/bin/jq '
+          .keys["0x0"].states["0"].actions |= (
+            map(select(
+              .id != "com_core447_OSPlugin::RunCommand"
+              or .settings.command != "arctis-mic-led-sync"
+            )) + [{
+              id: "com_core447_OSPlugin::RunCommand",
+              settings: {
+                command: "arctis-mic-led-sync",
+                display_output: false,
+                detached: true,
+                auto_run: 0,
+                keep_auto_run_in_background: false
+              }
+            }]
+          )' "$pageFile" > "$tmpFile"
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$pageFile"
+      fi
+    '';
   } // lib.optionalAttrs (host == "nixtop") {
     ensureCitrixGlWorkaround = lib.hm.dag.entryAfter ["writeBoundary"] ''
       citrixCfg="$HOME/.ICAClient/wfclient.ini"
