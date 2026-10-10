@@ -1,5 +1,4 @@
-{ pkgs, ... }:
-
+{ ... }:
 {
   programs.gamemode.enable = true;
 
@@ -29,6 +28,8 @@
 
   programs.gamescope = {
     enable = true;
-    capSysNice = true;
+    # Steam launch options run in pressure-vessel, which cannot inherit the
+    # capability-enabled wrapper. The direct package binary works there.
+    capSysNice = false;
   };
 }

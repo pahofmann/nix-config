@@ -1635,6 +1635,9 @@ in
     kubectl
     kubernetes-helm
 
+    #notes
+    obsidian
+
     #printing
     pdfarranger
 

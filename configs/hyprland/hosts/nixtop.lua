@@ -68,7 +68,14 @@ local app_workspace_rules = {
     },
     {
         name = "nixtop-development",
-        match = { class = "^(Code|code|codium|VSCodium)$" },
+        -- Route only main editor windows. Dialogs share the editor's class;
+        -- forcing them onto workspace 3 separates them from a parent that
+        -- has been moved to another workspace or monitor.
+        match = {
+            class = "^(Code|code|codium|VSCodium)$",
+            float = false,
+            modal = false,
+        },
         workspace = "3",
     },
     {

@@ -12,6 +12,11 @@ hl.config({
     kb_variant = "basic",
     kb_model = "pc104",
     kb_options = "eurosign:e",
+    -- Do not move keyboard focus merely because the cursor crosses to the
+    -- other monitor. This keeps fullscreen games focused if their cursor is
+    -- briefly visible or fails to grab, while normal desktop focus still
+    -- changes on click.
+    follow_mouse = 0,
   },
 })
 
@@ -51,6 +56,10 @@ bind(mod .. " + V", hl.dsp.exec_cmd("dms ipc call clipboard toggle"), "Toggle cl
 bind(mod .. " + PERIOD", hl.dsp.exec_cmd("dms ipc call emojiPicker toggle"), "Toggle emoji picker")
 bind(mod .. " + SLASH", hl.dsp.exec_cmd("dms ipc call hypr toggleBinds"), "Show keyboard shortcuts")
 bind(mod .. " + SHIFT + Q", hl.dsp.exec_cmd("dms ipc call powermenu toggle"), "Open power menu")
+
+-- Switch keyboard focus between monitors without relying on mouse movement.
+bind("ALT + TAB", hl.dsp.focus({ monitor = "+1" }), "Focus next monitor")
+bind("ALT + SHIFT + TAB", hl.dsp.focus({ monitor = "-1" }), "Focus previous monitor")
 
 -- Everyday applications and window controls.
 bind(mod .. " + RETURN", hl.dsp.exec_cmd("alacritty"), "Open terminal")
