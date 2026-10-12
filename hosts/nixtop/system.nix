@@ -38,6 +38,10 @@
   # Web Store installation in the user profile.
   programs.chromium = {
     enable = true;
+    # 1 = restore the windows and tabs from the last regular session.
+    extraOpts = {
+      RestoreOnStartup = 1;
+    };
     extensions = [
       "nngceckbapebfimnlniiiahkandclblb" # Bitwarden Password Manager
     ];
