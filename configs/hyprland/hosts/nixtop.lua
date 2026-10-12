@@ -63,7 +63,7 @@ local app_workspace_rules = {
     },
     {
         name = "nixtop-hermes",
-        match = { class = "^(Hermes|hermes-desktop)$" },
+        match = { class = "^(Hermes|hermes-desktop|com\\.nousresearch\\.hermes)$" },
         workspace = "2",
     },
     {

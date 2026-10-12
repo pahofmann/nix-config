@@ -230,6 +230,7 @@ in
       libXdamage
       libXext
       libXfixes
+      libXi
       libXrandr
       libXScrnSaver
       libxcb

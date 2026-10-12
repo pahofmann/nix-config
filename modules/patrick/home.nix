@@ -108,6 +108,13 @@ let
     text = ''
       hermesBin="$HOME/.local/bin/hermes"
 
+      # Hermes ships its own Python runtime.  Unlike Nix Python it does not
+      # automatically discover NixOS's CA certificates, so HTTPS update and
+      # release checks otherwise fail certificate validation.
+      export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
+      export REQUESTS_CA_BUNDLE="$SSL_CERT_FILE"
+      export CURL_CA_BUNDLE="$SSL_CERT_FILE"
+
       if [ ! -x "$hermesBin" ]; then
         echo "Installing Hermes Agent for this user..." >&2
         # The upstream installer downloads uv when this path is absent.  That
@@ -118,7 +125,7 @@ let
         ln -sfn ${pkgs.uv}/bin/uv "$HOME/.hermes/bin/uv"
         ${pkgs.curl}/bin/curl -fsSL \
           https://hermes-agent.nousresearch.com/install.sh | ${pkgs.bash}/bin/bash -- \
-          --include-desktop --skip-setup
+          --skip-setup
       fi
 
       # The updater reconciles a local checkout and retains its own safety
@@ -806,6 +813,22 @@ in
         StartupWMClass=Hermes
       '';
     };
+    # Hermes Desktop insists on maintaining an entry named after its Electron
+    # app-id. Keep that required file hidden: the launcher above is the sole
+    # visible, Nix-managed menu entry.
+    ".local/share/applications/com.nousresearch.hermes.desktop" = {
+      force = true;
+      text = ''
+        [Desktop Entry]
+        Type=Application
+        Name=Hermes
+        Exec=${hermesDesktop}/bin/hermes-desktop
+        Icon=hermes
+        Terminal=false
+        StartupWMClass=com.nousresearch.hermes
+        NoDisplay=true
+      '';
+    };
     # Pin the reviewed upstream Markets plugin rather than letting DMS mutate
     # its plugin directory outside the Nix configuration.
     ".config/DankMaterialShell/plugins/markets" = {
@@ -1164,6 +1187,16 @@ in
   };
 
   home.activation = {
+    # Hermes creates its app-id launcher on every Desktop launch. Its own
+    # opt-out makes it retain the hidden compatibility entry above instead of
+    # replacing it with a second visible menu entry.
+    disableHermesLauncherManagement = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      hermesConfig="$HOME/.hermes/config.yaml"
+      if [ -f "$hermesConfig" ]; then
+        $DRY_RUN_CMD ${pkgs.yq-go}/bin/yq -i \
+          '.desktop.manage_launcher_entry = false' "$hermesConfig"
+      fi
+    '';
     # Keep existing MIME defaults (browser, mail client, etc.) owned by their
     # respective applications.  Home Manager's xdg.mimeApps module would take
     # over both mimeapps.list locations and therefore collide with those files.
