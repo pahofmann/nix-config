@@ -40,6 +40,17 @@ let
     export QT_QPA_PLATFORM=xcb
     export GDK_BACKEND=x11
     export MOZ_ENABLE_WAYLAND=0
+
+    # Nix owns the Webex executable and patches its runtime dependencies.
+    # Webex occasionally downloads an unpatched replacement here; remove only
+    # those versioned payload directories before launch. User state remains in
+    # ~/.local/share/Webex and is never touched.
+    webex_launcher_dir="$HOME/.local/share/WebexLauncher"
+    if [ -d "$webex_launcher_dir" ]; then
+      find "$webex_launcher_dir" -mindepth 1 -maxdepth 1 -type d \
+        -name '[0-9]*.[0-9]*.[0-9]*_*' -exec rm -rf -- {} +
+    fi
+
     exec ${pkgs.webex}/bin/webex --ozone-platform=x11 "$@"
   '';
 in
