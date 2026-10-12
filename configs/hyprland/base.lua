@@ -38,104 +38,11 @@ hl.config({
   },
 })
 
-local mod = "SUPER"
+-- DMS reads this module directly for Meta+/ and Hyprland loads the very same
+-- bindings.  Keep user overrides in dms/binds-user.lua.
+require("dms.binds")
+pcall(require, "dms.binds-user")
 
-local function bind(keys, dispatcher, description, flags)
-  flags = flags or {}
-  flags.description = description
-  hl.bind(keys, dispatcher, flags)
-end
-
--- DMS controls. A modifier-only binding must use its keysym (not
--- "SUPER + SUPER_L"). Triggering on release keeps normal Super chords usable.
-bind("Super_L", hl.dsp.exec_cmd("dms ipc call spotlight toggle"), "Open application launcher", { release = true })
-bind("Super_R", hl.dsp.exec_cmd("dms ipc call spotlight toggle"), "Open application launcher", { release = true })
-bind(mod .. " + SPACE", hl.dsp.exec_cmd("dms ipc call spotlight toggle"), "Open application launcher")
-bind(mod .. " + TAB", hl.dsp.exec_cmd("dms ipc call hypr toggleOverview"), "Toggle workspace overview")
-bind(mod .. " + V", hl.dsp.exec_cmd("dms ipc call clipboard toggle"), "Toggle clipboard history")
-bind(mod .. " + PERIOD", hl.dsp.exec_cmd("dms ipc call emojiPicker toggle"), "Toggle emoji picker")
-bind(mod .. " + SLASH", hl.dsp.exec_cmd("dms ipc call hypr toggleBinds"), "Show keyboard shortcuts")
-bind(mod .. " + SHIFT + Q", hl.dsp.exec_cmd("dms ipc call powermenu toggle"), "Open power menu")
-
--- Switch keyboard focus between monitors without relying on mouse movement.
-bind("ALT + TAB", hl.dsp.focus({ monitor = "+1" }), "Focus next monitor")
-bind("ALT + SHIFT + TAB", hl.dsp.focus({ monitor = "-1" }), "Focus previous monitor")
-
--- Everyday applications and window controls.
-bind(mod .. " + RETURN", hl.dsp.exec_cmd("alacritty"), "Open terminal")
-bind("CTRL + ALT + T", hl.dsp.exec_cmd("alacritty"), "Open terminal")
-bind(mod .. " + E", hl.dsp.exec_cmd("dolphin"), "Open file manager")
-bind(mod .. " + Q", hl.dsp.window.close(), "Close focused window")
-bind(mod .. " + F", hl.dsp.window.fullscreen({ action = "toggle" }), "Toggle fullscreen")
-bind(mod .. " + SHIFT + SPACE", hl.dsp.window.float({ action = "toggle" }), "Toggle floating")
-bind(mod .. " + L", hl.dsp.exec_cmd("loginctl lock-session"), "Lock session")
-bind(mod .. " + J", hl.dsp.layout("togglesplit"), "Toggle current split orientation")
-bind(mod .. " + SHIFT + J", hl.dsp.layout("swapsplit"), "Swap windows in current split")
-
--- Focus and move windows without leaving the arrow cluster.
-for _, direction in ipairs({ "left", "right", "up", "down" }) do
-  bind(mod .. " + " .. direction, hl.dsp.focus({ direction = direction }), "Focus window " .. direction)
-  bind(mod .. " + SHIFT + " .. direction, hl.dsp.window.move({ direction = direction }), "Move window " .. direction)
-end
-
--- Resize the focused window in predictable 40px increments. Holding a key
--- repeats the adjustment; right/down grow and left/up shrink.
-local resize_steps = {
-  left = { x = -40, y = 0 },
-  right = { x = 40, y = 0 },
-  up = { x = 0, y = 40 },
-  down = { x = 0, y = -40 },
-}
-for direction, step in pairs(resize_steps) do
-  bind(
-    mod .. " + CTRL + " .. direction,
-    hl.dsp.window.resize({ x = step.x, y = step.y, relative = true }),
-    "Resize window " .. direction,
-    { repeating = true }
-  )
-end
-
--- Workspaces are dynamic. Plain numpad keys must retain their normal number
--- input. Bind the physical numpad only with Super; the alternate keysyms keep
--- that working when NumLock is off as well.
-local numpad_workspaces = {
-  { number = "KP_1", navigation = "KP_End" },
-  { number = "KP_2", navigation = "KP_Down" },
-  { number = "KP_3", navigation = "KP_Next" },
-  { number = "KP_4", navigation = "KP_Left" },
-  { number = "KP_5", navigation = "KP_Begin" },
-  { number = "KP_6", navigation = "KP_Right" },
-  { number = "KP_7", navigation = "KP_Home" },
-  { number = "KP_8", navigation = "KP_Up" },
-  { number = "KP_9", navigation = "KP_Prior" },
-  { number = "KP_0", navigation = "KP_Insert" },
-}
-for workspace, keys in ipairs(numpad_workspaces) do
-  for _, key in ipairs({ keys.number, keys.navigation }) do
-    bind(mod .. " + " .. key, hl.dsp.focus({ workspace = workspace }), "Switch to workspace " .. workspace)
-    bind(mod .. " + SHIFT + " .. key, hl.dsp.window.move({ workspace = workspace }), "Move window to workspace " .. workspace)
-  end
-end
-
-bind(mod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }), "Next workspace")
-bind(mod .. " + mouse_up", hl.dsp.focus({ workspace = "e-1" }), "Previous workspace")
-bind(mod .. " + mouse:272", hl.dsp.window.drag(), "Move window with mouse", { mouse = true })
-bind(mod .. " + mouse:273", hl.dsp.window.resize(), "Resize window with mouse", { mouse = true })
-
--- Quick Capture replaces the former Grimblast/Swappy shortcuts.  Print opens
--- its region selector and annotation editor in one step.
-bind("PRINT", hl.dsp.exec_cmd("dms ipc call quickCapture screenshot region edit"), "Capture and annotate screenshot area")
-bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("dms ipc call audio increment 5"), "Increase volume", { locked = true, repeating = true })
-bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("dms ipc call audio decrement 5"), "Decrease volume", { locked = true, repeating = true })
-bind("XF86AudioMute", hl.dsp.exec_cmd("dms ipc call audio mute"), "Toggle volume mute", { locked = true })
-bind("XF86AudioMicMute", hl.dsp.exec_cmd("dms ipc call audio micmute"), "Toggle microphone mute", { locked = true })
-bind("XF86MonBrightnessUp", hl.dsp.exec_cmd("dms ipc call brightness increment 5 \"\""), "Increase brightness", { locked = true, repeating = true })
-bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("dms ipc call brightness decrement 5 \"\""), "Decrease brightness", { locked = true, repeating = true })
-bind("XF86AudioNext", hl.dsp.exec_cmd("dms ipc call mpris next"), "Next track", { locked = true })
-bind("XF86AudioPause", hl.dsp.exec_cmd("dms ipc call mpris playPause"), "Play or pause", { locked = true })
-bind("XF86AudioPlay", hl.dsp.exec_cmd("dms ipc call mpris playPause"), "Play or pause", { locked = true })
-bind("XF86AudioPrev", hl.dsp.exec_cmd("dms ipc call mpris previous"), "Previous track", { locked = true })
-
--- A host file supplies displays and machine-specific placement rules. A
--- missing one must never prevent portable keybinds from loading.
-pcall(require, "host")
+-- Every host gets a host.lua (the portable one is intentionally empty), so
+-- this direct import also lets DMS discover host-specific shortcuts.
+require("host")

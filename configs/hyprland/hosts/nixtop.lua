@@ -138,17 +138,29 @@ for _, rule in ipairs(app_workspace_rules) do
     hl.window_rule(rule)
 end
 
+-- Communication apps are launched concurrently by the desktop autostart.
+-- Keep each window on its assigned workspace, but never let its first map
+-- pull focus (or switch the visible workspace) away from the current task.
+-- This also protects against delayed XDG-activation requests from Electron.
+hl.window_rule({
+    name = "nixtop-autostart-apps-no-initial-focus",
+    match = {
+        class = "^(Signal|signal|todoist|Todoist|zoho-mail-desktop|Zoho Mail - Desktop|teams-for-linux|Teams-for-Linux|Webex|webex)$",
+    },
+    no_initial_focus = true,
+})
+hl.window_rule({
+    name = "nixtop-autostart-whatsapp-no-initial-focus",
+    match = {
+        class = "^chrome-.*$",
+        title = "^WhatsApp Web$",
+    },
+    no_initial_focus = true,
+})
+
 -- Ctrl+Alt cycles only the 1–10 workflow on the ultra-wide. Firefox's
 -- transient workspace is deliberately neither selected nor used as a target.
-hl.bind("CTRL + ALT + RIGHT", hl.dsp.exec_cmd("nixtop-workspace-cycle next"), {
-    description = "Next workspace on ultra-wide",
-})
-hl.bind("CTRL + ALT + LEFT", hl.dsp.exec_cmd("nixtop-workspace-cycle previous"), {
-    description = "Previous workspace on ultra-wide",
-})
-hl.bind("CTRL + ALT + SHIFT + RIGHT", hl.dsp.exec_cmd("nixtop-workspace-cycle next move"), {
-    description = "Move window to next workspace",
-})
-hl.bind("CTRL + ALT + SHIFT + LEFT", hl.dsp.exec_cmd("nixtop-workspace-cycle previous move"), {
-    description = "Move window to previous workspace",
-})
+hl.bind("CTRL + ALT + RIGHT", hl.dsp.exec_cmd("nixtop-workspace-cycle next"), { description = "Workspace →" })
+hl.bind("CTRL + ALT + LEFT", hl.dsp.exec_cmd("nixtop-workspace-cycle previous"), { description = "Workspace ←" })
+hl.bind("CTRL + ALT + SHIFT + RIGHT", hl.dsp.exec_cmd("nixtop-workspace-cycle next move"), { description = "Fenster →" })
+hl.bind("CTRL + ALT + SHIFT + LEFT", hl.dsp.exec_cmd("nixtop-workspace-cycle previous move"), { description = "Fenster ←" })

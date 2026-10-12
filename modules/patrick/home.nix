@@ -539,6 +539,11 @@ let
             "0.5|\(address("^(webex|Webex)$"))"
           elif has("^(teams-for-linux|Teams-for-Linux)$") then
             "0.5|\(address("^(teams-for-linux|Teams-for-Linux)$"))"
+          # The main Steam window is normally accompanied by its narrow
+          # Friends List. Keep a 90 % / 10 % Workspace 8 split when Steam
+          # opens again, without floating.
+          elif any(.[]; (.class | test("^(Steam|steam)$")) and .title == "Steam") then
+            "0.90|\(first(.[] | select((.class | test("^(Steam|steam)$")) and .title == "Steam") | .address))"
           else empty end
         ')"
         [ -n "$policy" ] || return
@@ -699,11 +704,10 @@ in
       # by Home Manager, so without force it prevents activation forever.
       force = true;
     };
-    # DMS' shortcut pop-up parses this legacy file, whereas the active
-    # Hyprland 0.55 configuration is Lua.  This declarative catalogue makes
-    # the pop-up reflect our Lua bindings without affecting their behaviour.
-    ".config/hypr/dms/binds.conf" = {
-      source = ../../configs/hyprland/dms-binds.conf;
+    # DMS 1.6 and Hyprland both load this one Lua source of truth.  DMS reads
+    # it for Meta+/ while Hyprland imports it from hyprland.lua.
+    ".config/hypr/dms/binds.lua" = {
+      source = ../../configs/hyprland/dms/binds.lua;
       force = true;
     };
     ".config/hypr/hypridle.conf" = {
@@ -1078,9 +1082,11 @@ in
           popoutHeight: 230
       }
     '';
-  } // lib.optionalAttrs (host == "nixtop") {
+  } // {
     ".config/hypr/host.lua" = {
-      source = ../../configs/hyprland/hosts/nixtop.lua;
+      source = if host == "nixtop"
+        then ../../configs/hyprland/hosts/nixtop.lua
+        else ../../configs/hyprland/hosts/default.lua;
       force = true;
     };
   };

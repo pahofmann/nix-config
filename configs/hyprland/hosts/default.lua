@@ -1,0 +1,1 @@
+-- Portable hosts have no display- or host-specific Hyprland rules.
