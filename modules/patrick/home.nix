@@ -527,6 +527,23 @@ let
         workspace="$(printf '%s' "$client" | jq -r '.workspace.id')"
         tiled="$(hyprctl clients -j | jq -c --argjson workspace "$workspace" '[.[] | select(.mapped and (.workspace.id == $workspace) and (.floating | not))]')"
         [ "$(printf '%s' "$tiled" | jq length)" -eq 2 ] || return
+        active="$(hyprctl activewindow -j | jq -r '.address // empty')"
+
+        # Steam's Friends List is its chat window.  Make its side stable too:
+        # Friends List is always left, while the main Steam client is right.
+        # Hyprland otherwise preserves whichever window happened to map first.
+        steam_main="$(printf '%s' "$tiled" | jq -r 'first(.[] | select((.class | test("^(Steam|steam)$")) and .title == "Steam") | .address) // empty')"
+        friends_list="$(printf '%s' "$tiled" | jq -r 'first(.[] | select((.class | test("^(Steam|steam)$")) and .title == "Friends List") | .address) // empty')"
+        if [ -n "$steam_main" ] && [ -n "$friends_list" ]; then
+          friends_x="$(printf '%s' "$tiled" | jq -r --arg address "$friends_list" 'first(.[] | select(.address == $address) | .at[0])')"
+          steam_x="$(printf '%s' "$tiled" | jq -r --arg address "$steam_main" 'first(.[] | select(.address == $address) | .at[0])')"
+          if [ "$friends_x" -gt "$steam_x" ]; then
+            hyprctl eval "hl.dispatch(hl.dsp.focus({ window = \"address:$friends_list\" }))" >/dev/null || return
+            hyprctl dispatch swapwindow "address:$steam_main" >/dev/null || return
+            sleep 0.05
+            tiled="$(hyprctl clients -j | jq -c --argjson workspace "$workspace" '[.[] | select(.mapped and (.workspace.id == $workspace) and (.floating | not))]')"
+          fi
+        fi
         # A Dwindle split belongs to the pair, not to either window.  Select
         # exactly one authoritative window for each requested layout; applying
         # a ratio to both windows sequentially would make the second call undo
@@ -546,9 +563,8 @@ let
             "0.5|\(address("^(webex|Webex)$"))"
           elif has("^(teams-for-linux|Teams-for-Linux)$") then
             "0.5|\(address("^(teams-for-linux|Teams-for-Linux)$"))"
-          # The main Steam window is normally accompanied by its narrow
-          # Friends List. Keep a 90 % / 10 % Workspace 8 split when Steam
-          # opens again, without floating.
+          # Keep the main Steam client at 90 % (right) and Friends List at
+          # 10 % (left), without making either window floating.
           elif any(.[]; (.class | test("^(Steam|steam)$")) and .title == "Steam") then
             "0.90|\(first(.[] | select((.class | test("^(Steam|steam)$")) and .title == "Steam") | .address))"
           else empty end
@@ -556,7 +572,6 @@ let
         [ -n "$policy" ] || return
         IFS='|' read -r wanted target <<< "$policy"
         [ -n "$wanted" ] && [ -n "$target" ] || return
-        active="$(hyprctl activewindow -j | jq -r '.address // empty')"
         # Hyprland 0.55 exposes dispatchers through the Lua API.  The former
         # text commands (`focuswindow` and `layoutmsg`) are parsed as Lua and
         # fail, which used to terminate this service before it sized anything.
