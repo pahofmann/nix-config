@@ -136,7 +136,7 @@ in
     isNormalUser = true;
     description = "Patrick";
     shell = pkgs.fish;
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [ "networkmanager" "wheel" "dialout" ];
     packages = with pkgs; [
       kdePackages.kate
       kdePackages.kcalc

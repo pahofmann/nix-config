@@ -3,7 +3,7 @@
 let
   arctisMicLedSync = pkgs.writeShellApplication {
     name = "arctis-mic-led-sync";
-    runtimeInputs = [ pkgs.alsa-utils pkgs.gnugrep pkgs.wireplumber ];
+    runtimeInputs = [ pkgs.alsa-utils pkgs.coreutils pkgs.gnugrep pkgs.wireplumber ];
     text = ''
       # The Stream Deck's MicMute plugin controls PipeWire.  The Arctis LED,
       # however, is driven by its USB capture switch, which is intentionally
@@ -13,9 +13,9 @@ let
       # action needs to update PipeWire before this companion action reads it.
       sleep 0.15
       if wpctl get-volume @DEFAULT_AUDIO_SOURCE@ | grep -q '\[MUTED\]'; then
-        amixer -c 0 cset numid=3 off >/dev/null
+        amixer -c Wireless cset name='Headset Capture Switch' off >/dev/null
       else
-        amixer -c 0 cset numid=3 on >/dev/null
+        amixer -c Wireless cset name='Headset Capture Switch' on >/dev/null
       fi
     '';
   };
