@@ -53,12 +53,73 @@ let
 
     exec ${pkgs.webex}/bin/webex --ozone-platform=x11 "$@"
   '';
+
+  # ESPHome publishes the Desktop / Device Builder outside Nixpkgs.  Its
+  # current AppImage cannot be extracted by appimageTools, so use the equally
+  # official Debian archive inside a minimal FHS launcher instead.
+  esphomeDesktopFiles = pkgs.stdenvNoCC.mkDerivation {
+    pname = "esphome-desktop";
+    version = "1.0.0";
+    src = pkgs.fetchurl {
+      url = "https://github.com/esphome/esphome-desktop/releases/download/v1.0.0/ESPHome.Device.Builder_1.0.0_amd64.deb";
+      hash = "sha256-9cQSKwXBuz8hT26n2Ad/1cZO3njaBzOm/sUuaTFwGIY=";
+    };
+    nativeBuildInputs = [ pkgs.dpkg ];
+    unpackPhase = ''
+      dpkg-deb -x "$src" .
+    '';
+    installPhase = ''
+      mkdir -p "$out"
+      cp -r usr "$out/"
+    '';
+  };
+
+  esphomeDesktop = pkgs.buildFHSEnv {
+    name = "esphome-desktop";
+    runScript = "${esphomeDesktopFiles}/usr/bin/esphome-desktop";
+    targetPkgs = pkgs: with pkgs; [
+      alsa-lib
+      at-spi2-atk
+      at-spi2-core
+      cairo
+      dbus
+      fontconfig
+      freetype
+      gdk-pixbuf
+      glib
+      gtk3
+      libGL
+      libappindicator-gtk3
+      libdrm
+      libnotify
+      libsoup_3
+      libxkbcommon
+      mesa
+      nspr
+      nss
+      pango
+      webkitgtk_4_1
+      libx11
+      libxcomposite
+      libxdamage
+      libxext
+      libxfixes
+      libxrandr
+      libxcb
+    ];
+    extraInstallCommands = ''
+      install -Dm444 "${esphomeDesktopFiles}/usr/share/applications/ESPHome Device Builder.desktop" \
+        "$out/share/applications/esphome-desktop.desktop"
+      cp -r "${esphomeDesktopFiles}/usr/share/icons" "$out/share/"
+    '';
+  };
 in
 {
   environment.systemPackages = with pkgs; [
     vim
     webex
     webexWrapped
+    esphomeDesktop
     nixtopWorkspaceCycle
     typora
     postman

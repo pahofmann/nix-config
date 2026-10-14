@@ -15,6 +15,9 @@
   ];
 
   networking.hostName = "nixtop";
+  # ESPHome Desktop accepts paired build requests from Home Assistant on this
+  # peer-link port.  The builder itself remains local to this machine.
+  networking.firewall.allowedTCPPorts = [ 6055 ];
   patrick.danklinux.enable = true;
 
   # DMS controls power profiles through this D-Bus service.  A desktop should

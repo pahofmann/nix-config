@@ -539,7 +539,7 @@ let
           steam_x="$(printf '%s' "$tiled" | jq -r --arg address "$steam_main" 'first(.[] | select(.address == $address) | .at[0])')"
           if [ "$friends_x" -gt "$steam_x" ]; then
             hyprctl eval "hl.dispatch(hl.dsp.focus({ window = \"address:$friends_list\" }))" >/dev/null || return
-            hyprctl dispatch swapwindow "address:$steam_main" >/dev/null || return
+            hyprctl eval "hl.dispatch(hl.dsp.window.swap({ target = \"address:$steam_main\" }))" >/dev/null || return
             sleep 0.05
             tiled="$(hyprctl clients -j | jq -c --argjson workspace "$workspace" '[.[] | select(.mapped and (.workspace.id == $workspace) and (.floating | not))]')"
           fi
