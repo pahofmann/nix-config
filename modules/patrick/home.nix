@@ -115,6 +115,11 @@ let
       export REQUESTS_CA_BUNDLE="$SSL_CERT_FILE"
       export CURL_CA_BUNDLE="$SSL_CERT_FILE"
 
+      # Hermes recorded a past NVIDIA GPU-probe failure and consequently
+      # forces ANGLE/SwiftShader (CPU rendering) on every launch. Opt out of
+      # that persisted fallback so the Electron UI uses the NVIDIA renderer.
+      export HERMES_DESKTOP_NVIDIA_SWIFTSHADER=0
+
       if [ ! -x "$hermesBin" ]; then
         echo "Installing Hermes Agent for this user..." >&2
         # The upstream installer downloads uv when this path is absent.  That
@@ -428,6 +433,17 @@ let
         done
       }
 
+      float_auxiliary_window() {
+        address="$1"
+        # Webex can reset the state once while its meeting window finishes
+        # mapping. Reassert floating briefly, but leave its own geometry and
+        # anchor position entirely untouched.
+        for _ in 1 2 3; do
+          hyprctl eval "hl.dispatch(hl.dsp.window.float({ window = \"address:$address\", action = \"on\" }))" >/dev/null
+          sleep 0.1
+        done
+      }
+
       select_existing_primary() {
         primary_address="$(hyprctl clients -j 2>/dev/null | jq -r '
           [.[] | select(.mapped and (.class | ascii_downcase == "webex"))
@@ -466,10 +482,13 @@ let
           primary_address="$address"
           move_primary_to_workspace "$address"
         fi
-        # Subsequent Webex toplevels are popups.  Do not change their
-        # floating state, geometry, or workspace: doing so makes Hyprland
-        # discard Webex's intended anchor position (for example reaction
-        # menus) and leaves the popup at the screen corner.
+        # Every later Webex toplevel is an auxiliary window. This includes
+        # meeting windows, which must not become part of the tiled layout.
+        # Keep their Webex-selected geometry and workspace, only make them
+        # floating.
+        if [ "$address" != "$primary_address" ]; then
+          float_auxiliary_window "$address"
+        fi
       }
 
       while true; do
