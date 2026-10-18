@@ -15,6 +15,27 @@
   ];
 
   networking.hostName = "nixtop";
+
+  # `ichbin.nas` is a local-only name served by the router.  Do not let a
+  # public resolver supplied by another connection win the DNS race: keep the
+  # router as the sole DNS server for the wired LAN and reserve Cloudflare for
+  # the case where no connection-specific DNS server is available.
+  networking.networkmanager.ensureProfiles.profiles.wired-home = {
+    connection = {
+      id = "Wired connection 1";
+      uuid = "d7539298-8feb-3ac4-bec1-a56221ce572b";
+      type = "ethernet";
+      interface-name = "eno1";
+    };
+    ipv4 = {
+      method = "auto";
+      dns = "192.168.2.253";
+      ignore-auto-dns = true;
+    };
+    ipv6.method = "disabled";
+  };
+  services.resolved.settings.Resolve.FallbackDNS = [ "1.1.1.1" ];
+
   # ESPHome Desktop accepts paired build requests from Home Assistant on this
   # peer-link port.  The builder itself remains local to this machine.
   networking.firewall.allowedTCPPorts = [ 6055 ];

@@ -102,7 +102,9 @@ let
       gnumake
       nodejs_22
       pkg-config
+      procps
       python311
+      util-linux
       uv
     ];
     text = ''
@@ -139,7 +141,34 @@ let
       "$hermesBin" update --yes || \
         echo "Hermes update failed; starting the installed version." >&2
 
-      exec "$hermesBin" desktop "$@"
+      echo "Launching Hermes Desktop..." >&2
+      desktopLog="$HOME/.hermes/logs/desktop-launch.log"
+      mkdir -p "$(dirname "$desktopLog")"
+      # The start terminal closes once Electron is up.  Give the actual
+      # desktop launcher its own session first, otherwise Alacritty sends it
+      # SIGHUP while closing and Hermes dies with the terminal.
+      setsid "$hermesBin" desktop "$@" >"$desktopLog" 2>&1 < /dev/null &
+      hermesDesktopPath="$HOME/.hermes/hermes-agent/apps/desktop/release/linux-unpacked/Hermes"
+
+      # `hermes desktop` owns update and launch orchestration.  Keep this
+      # terminal around for that progress, but do not tie its lifetime to the
+      # Electron process: close it as soon as the actual Desktop binary maps.
+      for _ in $(seq 1 300); do
+        if pgrep -u "$(id -u)" -f "$hermesDesktopPath" >/dev/null; then
+          echo "Hermes Desktop is running." >&2
+          exit 0
+        fi
+        sleep 0.1
+      done
+
+      echo "Hermes did not reach the Desktop process within 30 seconds." >&2
+      echo "Recent launch output:" >&2
+      tail -n 40 "$desktopLog" >&2 || true
+      if [ -t 0 ]; then
+        printf 'Press Enter to close this window... ' >&2
+        read -r _
+      fi
+      exit 1
     '';
   };
   hermesIcon = pkgs.fetchurl {
@@ -839,7 +868,7 @@ in
         Name=Hermes
         GenericName=Hermes Desktop
         Comment=Launch Hermes Desktop
-        Exec=${hermesDesktop}/bin/hermes-desktop
+        Exec=${pkgs.alacritty}/bin/alacritty --title "Starting Hermes" -e ${hermesDesktop}/bin/hermes-desktop
         Icon=hermes
         Terminal=false
         Categories=Utility;Development;
