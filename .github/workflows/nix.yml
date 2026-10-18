@@ -20,6 +20,8 @@ jobs:
         host: [nixtop, xps15]
     steps:
       - uses: actions/checkout@v5
+      - name: Test declarative autostart behavior
+        run: python3 -m unittest discover -s tests -v
       - uses: cachix/install-nix-action@v31
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}

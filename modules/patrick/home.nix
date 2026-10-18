@@ -706,6 +706,16 @@ let
       exec "$@"
     '';
   };
+  weekdayAutostart = pkgs.writeShellApplication {
+    name = "weekday-autostart";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = ''
+      case "$(${pkgs.coreutils}/bin/date +%u)" in
+        1|2|3|4|5) exec "$@" ;;
+        *) exit 0 ;;
+      esac
+    '';
+  };
   workspaceNames = pkgs.writeShellApplication {
     name = "nixtop-workspace-names";
     runtimeInputs = [ pkgs.coreutils pkgs.findutils pkgs.hyprland ];
@@ -1218,7 +1228,7 @@ in
       [Desktop Entry]
       Type=Application
       Name=Webex
-      Exec=${delayedAutostart}/bin/delayed-autostart 3 /run/current-system/sw/bin/webex-wrapped
+      Exec=${weekdayAutostart}/bin/weekday-autostart ${delayedAutostart}/bin/delayed-autostart 3 /run/current-system/sw/bin/webex-wrapped
       Terminal=false
       X-GNOME-Autostart-enabled=true
     '';
@@ -1226,7 +1236,7 @@ in
       [Desktop Entry]
       Type=Application
       Name=Teams for Linux
-      Exec=${delayedAutostart}/bin/delayed-autostart 3 ${pkgs.teams-for-linux}/bin/teams-for-linux
+      Exec=${weekdayAutostart}/bin/weekday-autostart ${delayedAutostart}/bin/delayed-autostart 3 ${pkgs.teams-for-linux}/bin/teams-for-linux
       Terminal=false
       X-GNOME-Autostart-enabled=true
     '';
