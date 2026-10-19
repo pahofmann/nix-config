@@ -11,6 +11,22 @@
   ];
 
   networking.hostName = "xps15";
+
+  # Hermes connects with a dedicated Ed25519 key.  Keep SSH key-only and
+  # disable root access; the service is needed for remote Nix maintenance.
+  services.openssh = {
+    enable = true;
+    settings = {
+      PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false;
+      PermitRootLogin = "no";
+    };
+  };
+  users.users.patrick.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILTNv3+MJQjHewsO1eHfxXPst+sODGEXPlqcfUpBxNUM hermes-nixtop"
+  ];
+  networking.firewall.allowedTCPPorts = [ 22 ];
+
   patrick.danklinux.enable = true;
 
   boot.loader.systemd-boot.enable = true;
