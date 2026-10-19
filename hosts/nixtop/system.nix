@@ -36,9 +36,23 @@
   };
   services.resolved.settings.Resolve.FallbackDNS = [ "1.1.1.1" ];
 
+  # Hermes connects from the home server with a dedicated Ed25519 key.  Keep
+  # SSH key-only, disable root access, and expose only the required LAN port.
+  services.openssh = {
+    enable = true;
+    settings = {
+      PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false;
+      PermitRootLogin = "no";
+    };
+  };
+  users.users.patrick.openssh.authorizedKeys.keys = [
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILTNv3+MJQjHewsO1eHfxXPst+sODGEXPlqcfUpBxNUM hermes-nixtop"
+  ];
+
   # ESPHome Desktop accepts paired build requests from Home Assistant on this
   # peer-link port.  The builder itself remains local to this machine.
-  networking.firewall.allowedTCPPorts = [ 6055 ];
+  networking.firewall.allowedTCPPorts = [ 22 6055 ];
   patrick.danklinux.enable = true;
 
   # DMS controls power profiles through this D-Bus service.  A desktop should
