@@ -1,5 +1,22 @@
 { pkgs, ... }:
-{
+let
+  openrazerViperMiddlePatch = pkgs.writeText "openrazer-viper-middle.patch" ''
+    --- a/driver/razermouse_driver.c
+    +++ b/driver/razermouse_driver.c
+    @@ -5947,7 +5947,10 @@ razer_input_mapping(struct hid_device *hdev, struct hid_input *hidinput,
+          * 15-element arrays on reports 4 and 5 with usage 0x10003. If
+          * hid-core tries to interpret this misshapen descriptor it will
+          * botch it and add spurious event codes to input->evkey. */
+    -    if (field->application == HID_UP_GENDESK
+    +    if (!(hdev->product == USB_DEVICE_ID_RAZER_VIPER_ULTIMATE_WIRELESS &&
+    +          to_usb_interface(hdev->dev.parent)->cur_altsetting->desc.bInterfaceProtocol ==
+    +              USB_INTERFACE_PROTOCOL_MOUSE) &&
+    +        field->application == HID_UP_GENDESK
+             && usage->hid == (HID_UP_GENDESK | 0x0003)) {
+             return -1;
+         }
+  '';
+in {
   imports = [
     ./hardware-configuration.nix
     ./boot.nix
@@ -15,6 +32,17 @@
   ];
 
   networking.hostName = "nixtop";
+
+  # OpenRazer 3.12.4 suppresses a Generic Desktop usage for every Viper
+  # Ultimate receiver interface. On the mouse interface that also drops the
+  # wheel-click report. Limit the suppression to the auxiliary interfaces so
+  # the battery/control sysfs API remains available while BTN_MIDDLE reaches
+  # the kernel input layer.
+  boot.kernelPackages = pkgs.linuxPackages.extend (_: prev: {
+    openrazer = prev.openrazer.overrideAttrs (old: {
+      patches = (old.patches or [ ]) ++ [ openrazerViperMiddlePatch ];
+    });
+  });
 
   # `ichbin.nas` is a local-only name served by the router.  Do not let a
   # public resolver supplied by another connection win the DNS race: keep the
