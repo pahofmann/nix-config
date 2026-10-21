@@ -201,6 +201,12 @@ let
     rev = "1c6aca795497ca87784a69d49a72060bfaa3a90d";
     hash = "sha256-NlreyeMp20f9JeP0gqE6wG4CN3rYWsnJHy9v9ofgR8Q=";
   };
+  dmsQuickCapturePluginSource = pkgs.fetchFromGitHub {
+    owner = "hthienloc";
+    repo = "dms-quick-capture";
+    rev = "d9e4475404e29223fd68d60feadf2eab810d098e";
+    hash = "sha256-q1cuw1iCYIrgT7y46VEJGy77K2UIDnL7K+73aeDp+Nc=";
+  };
   # Phone Connect is DMS's first-party frontend for the existing KDE Connect
   # daemon.  Keeping the daemon preserves its established device pairing.
   dmsDankKDEConnectPluginSource = pkgs.fetchFromGitHub {
@@ -790,6 +796,7 @@ in
       source = ../../configs/hyprland/dms/binds.lua;
       force = true;
     };
+
     ".config/hypr/hypridle.conf" = {
       source = ../../configs/hyprland/hypridle.conf;
       force = true;
@@ -916,6 +923,13 @@ in
     };
     ".config/DankMaterialShell/plugins/dankKDEConnect" = {
       source = "${dmsDankKDEConnectPluginSource}/DankKDEConnect";
+      recursive = true;
+      force = true;
+    };
+    # This is the same Quick Capture plugin used by the desktop's Print
+    # shortcut: it provides the annotation dialog and the `quickCapture` IPC.
+    ".config/DankMaterialShell/plugins/quickCapture" = {
+      source = dmsQuickCapturePluginSource;
       recursive = true;
       force = true;
     };

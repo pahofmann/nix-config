@@ -39,9 +39,8 @@ hl.config({
 })
 
 -- DMS reads this module directly for Meta+/ and Hyprland loads the very same
--- bindings.  Keep user overrides in dms/binds-user.lua.
+-- bindings.
 require("dms.binds")
-pcall(require, "dms.binds-user")
 
 -- Every host gets a host.lua (the portable one is intentionally empty), so
 -- this direct import also lets DMS discover host-specific shortcuts.
