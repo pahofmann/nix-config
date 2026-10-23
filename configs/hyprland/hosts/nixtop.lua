@@ -65,6 +65,10 @@ local app_workspace_rules = {
         name = "nixtop-hermes",
         match = { class = "^(Hermes|hermes-desktop|com\\.nousresearch\\.hermes)$" },
         workspace = "2",
+        -- Electron/NVIDIA occasionally exports an alpha channel that Hyprland
+        -- composites over the wallpaper although Hermes itself rendered opaque.
+        -- Screenshots are unaffected; ignore this erroneous client alpha.
+        force_rgbx = true,
     },
     {
         name = "nixtop-development",
