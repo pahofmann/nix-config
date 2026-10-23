@@ -1,8 +1,48 @@
 { pkgs, ... }:
 let
+  # OpenRazer 3.12.4 uses transaction ID 0xff for the Viper Ultimate's
+  # device_mode requests.  The mouse/receiver firmware responds reliably to
+  # 0x3f instead.  A failed mode switch leaves the generic HID mapping active,
+  # where BTN_MIDDLE can disappear after a KVM, cable, or wireless hand-off.
+  #
+  # This is deliberately a kernel-driver-only patch: it touches just the two
+  # device_mode requests for 1532:007a/007b, keeps OpenRazer's battery API
+  # intact for the DMS widget, and can be removed once upstream ships it.
   openrazerViperMiddlePatch = pkgs.writeText "openrazer-viper-middle.patch" ''
     --- a/driver/razermouse_driver.c
     +++ b/driver/razermouse_driver.c
+    @@ -3784,4 +3787,6 @@ static ssize_t razer_attr_write_device_mode(struct device *dev, struct device_a
+         case USB_DEVICE_ID_RAZER_DEATHADDER_V2_PRO_WIRELESS:
+         case USB_DEVICE_ID_RAZER_DEATHADDER_V2_MINI:
+    +    case USB_DEVICE_ID_RAZER_VIPER_ULTIMATE_WIRED:
+    +    case USB_DEVICE_ID_RAZER_VIPER_ULTIMATE_WIRELESS:
+         request.transaction_id.id = 0x3f;
+         break;
+    @@ -3818,8 +3823,6 @@ static ssize_t razer_attr_write_device_mode(struct device *dev, struct device_a
+         case USB_DEVICE_ID_RAZER_DEATHADDER_ESSENTIAL:
+         case USB_DEVICE_ID_RAZER_DEATHADDER_ESSENTIAL_WHITE_EDITION:
+         case USB_DEVICE_ID_RAZER_VIPER:
+    -    case USB_DEVICE_ID_RAZER_VIPER_ULTIMATE_WIRED:
+    -    case USB_DEVICE_ID_RAZER_VIPER_ULTIMATE_WIRELESS:
+         case USB_DEVICE_ID_RAZER_BASILISK_X_HYPERSPEED:
+         case USB_DEVICE_ID_RAZER_VIPER_MINI:
+         case USB_DEVICE_ID_RAZER_VIPER_8K:
+    @@ -3875,4 +3878,6 @@ static ssize_t razer_attr_read_device_mode(struct device *dev, struct device_at
+         case USB_DEVICE_ID_RAZER_MAMBA_WIRELESS_RECEIVER:
+         case USB_DEVICE_ID_RAZER_MAMBA_WIRELESS_WIRED:
+    +    case USB_DEVICE_ID_RAZER_VIPER_ULTIMATE_WIRED:
+    +    case USB_DEVICE_ID_RAZER_VIPER_ULTIMATE_WIRELESS:
+         request.transaction_id.id = 0x3f;
+         break;
+    @@ -3947,8 +3952,6 @@ static ssize_t razer_attr_read_device_mode(struct device *dev, struct device_at
+         case USB_DEVICE_ID_RAZER_DEATHADDER_ESSENTIAL:
+         case USB_DEVICE_ID_RAZER_DEATHADDER_ESSENTIAL_WHITE_EDITION:
+         case USB_DEVICE_ID_RAZER_VIPER:
+    -    case USB_DEVICE_ID_RAZER_VIPER_ULTIMATE_WIRED:
+    -    case USB_DEVICE_ID_RAZER_VIPER_ULTIMATE_WIRELESS:
+         case USB_DEVICE_ID_RAZER_BASILISK_X_HYPERSPEED:
+         case USB_DEVICE_ID_RAZER_VIPER_MINI:
+         case USB_DEVICE_ID_RAZER_VIPER_8K:
     @@ -5947,7 +5947,10 @@ razer_input_mapping(struct hid_device *hdev, struct hid_input *hidinput,
           * 15-element arrays on reports 4 and 5 with usage 0x10003. If
           * hid-core tries to interpret this misshapen descriptor it will
@@ -33,11 +73,17 @@ in {
 
   networking.hostName = "nixtop";
 
-  # OpenRazer 3.12.4 suppresses a Generic Desktop usage for every Viper
-  # Ultimate receiver interface. On the mouse interface that also drops the
-  # wheel-click report. Limit the suppression to the auxiliary interfaces so
-  # the battery/control sysfs API remains available while BTN_MIDDLE reaches
-  # the kernel input layer.
+  # One-reboot diagnostic variant: start without OpenRazer or its watchdog.
+  # The generic HID driver should then bind the Viper receiver.
+  specialisation.no-openrazer.configuration = {
+    hardware.openrazer.enable = pkgs.lib.mkForce false;
+    boot.blacklistedKernelModules = [ "razermouse" ];
+    systemd.services.razer-viper-middle-click.enable = false;
+  };
+
+  # Keep the workaround in the per-machine kernel package: no installed
+  # application or daemon source is modified, and the DMS battery widget
+  # continues to use the normal OpenRazer API.
   boot.kernelPackages = pkgs.linuxPackages.extend (_: prev: {
     openrazer = prev.openrazer.overrideAttrs (old: {
       patches = (old.patches or [ ]) ++ [ openrazerViperMiddlePatch ];
