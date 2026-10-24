@@ -73,6 +73,11 @@ in {
 
   networking.hostName = "nixtop";
 
+  # Install Logitech's uaccess rule so the logged-in desktop user can open
+  # LIGHTSPEED HID++ receiver nodes; Solaar needs raw hidraw access for
+  # SUPERSTRIKE settings and battery telemetry.
+  hardware.logitech.wireless.enable = true;
+
   # One-reboot diagnostic variant: start without OpenRazer or its watchdog.
   # The generic HID driver should then bind the Viper receiver.
   specialisation.no-openrazer.configuration = {

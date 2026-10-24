@@ -7,7 +7,9 @@ let
     wallpaperFillMode = "Fill";
     clockFormat = "24h";
     barElevationEnabled = false;
-    systemTrayIconTintMode = "monochrome";
+    # Solaar supplies colour PNGs for battery states; DMS's monochrome tint
+    # corrupts them in both the tray button and its indicator menu.
+    systemTrayIconTintMode = "none";
     systemTrayIconTintSaturation = 48;
     systemTrayIconTintStrength = 200;
     showWorkspaceApps = true;

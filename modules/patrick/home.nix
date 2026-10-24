@@ -253,10 +253,10 @@ let
       --replace-fail '["wl-copy",' '["${pkgs.wl-clipboard}/bin/wl-copy",'
   '';
   razerBatteryStatus = pkgs.writeShellApplication {
-    name = "dms-razer-battery-status";
-    runtimeInputs = [ pkgs.coreutils pkgs.gawk pkgs.gnugrep pkgs.gnused pkgs.jq pkgs.libnotify pkgs.systemd ];
+    name = "dms-wireless-battery-status";
+    runtimeInputs = [ pkgs.coreutils pkgs.gawk pkgs.gnugrep pkgs.gnused pkgs.jq pkgs.libnotify pkgs.solaar pkgs.systemd ];
     text = ''
-      state_dir="''${XDG_STATE_HOME:-$HOME/.local/state}/dms-razer-battery"
+      state_dir="''${XDG_STATE_HOME:-$HOME/.local/state}/dms-wireless-battery"
       history_file="$state_dir/history.jsonl"
       alert_file="$state_dir/low-battery-alerts.json"
       full_alert_file="$state_dir/full-battery-alerts.json"
@@ -267,6 +267,9 @@ let
         record_history=true
       fi
       ${pkgs.coreutils}/bin/mkdir -p "$state_dir"
+      # The first refresh has no history yet; initialise it before the common
+      # history reader below so a newly installed widget still returns JSON.
+      [ -e "$history_file" ] || : > "$history_file"
 
       devices='[]'
       # OpenRazer's daemon uses the wireless/dongle devices while a cable is
@@ -299,7 +302,6 @@ let
         charging="$(${pkgs.systemd}/bin/busctl --user call org.razer "$object_path" razer.device.power isCharging 2>/dev/null | ${pkgs.gawk}/bin/awk '{ print $2 }')" || continue
 
         case "$name" in
-          *Viper*) kind=mouse ;;
           *BlackWidow*) kind=keyboard ;;
           *) continue ;;
         esac
@@ -327,6 +329,28 @@ let
         devices="$(${pkgs.jq}/bin/jq -cn --arg name "$name" --arg kind "$kind" --argjson battery "$battery" --argjson charging "$charging" --argjson batteryKnown "$battery_known" \
           --argjson devices "$devices" '$devices + [{name: $name, kind: $kind, battery: $battery, charging: $charging, batteryKnown: $batteryKnown}]')"
       done < <(${pkgs.systemd}/bin/busctl --user tree org.razer 2>/dev/null | ${pkgs.gawk}/bin/awk 'match($0, /\/org\/razer\/device\/[^[:space:]]+/) { print substr($0, RSTART, RLENGTH) }')
+
+      # The PRO X2 SUPERSTRIKE is a Logitech HID++ 4.2 device. Solaar exposes
+      # its receiver-reported percentage and charging state independently of
+      # UPower, which only models the system battery here.
+      while IFS=$'\t' read -r name battery charging; do
+        [ -n "$name" ] || continue
+        devices="$(${pkgs.jq}/bin/jq -cn --arg name "$name" --argjson battery "$battery" --argjson charging "$charging" --argjson devices "$devices" \
+          '$devices + [{name: $name, kind: "mouse", battery: $battery, charging: $charging, batteryKnown: true}]')"
+      done < <(${pkgs.solaar}/bin/solaar show 2>/dev/null | ${pkgs.gawk}/bin/awk '
+        # Solaar indents device entries by two spaces.  Feature indices farther
+        # down the same report are more deeply indented and must not replace it.
+        /^  [0-9]+: / {
+          device = $0
+          sub(/^[[:space:]]*[0-9]+:[[:space:]]*/, "", device)
+          is_superstrike = tolower(device) ~ /superstrike/
+          next
+        }
+        is_superstrike && match($0, /Battery:[[:space:]]*([0-9]+)%,[[:space:]]*([[:alpha:]]+)/, fields) {
+          printf "%s\t%s\t%s\n", device, fields[1], tolower(fields[2]) == "charging"
+          is_superstrike = 0
+        }
+      ')
 
       # Preserve the last trustworthy level across the short USB/dongle
       # handover. OpenRazer reports a synthetic zero during that interval.
@@ -361,7 +385,7 @@ let
         notified="$(printf '%s' "$alerts" | ${pkgs.jq}/bin/jq -r --arg kind "$kind" '.[$kind] // false')"
         if [ "$battery_known" = true ] && [ "$battery_cached" != true ] && [ "$battery" -le 15 ] && [ "$charging" = false ]; then
           if [ "$notified" != true ]; then
-            ${pkgs.libnotify}/bin/notify-send -a "Razer Battery" -u critical -i battery-caution \
+            ${pkgs.libnotify}/bin/notify-send -a "Wireless Battery" -u critical -i battery-caution \
               "$name battery low" "$battery% remaining. Please charge your device."
           fi
           alerts="$(printf '%s' "$alerts" | ${pkgs.jq}/bin/jq -c --arg kind "$kind" '.[$kind] = true')"
@@ -935,8 +959,8 @@ in
     };
     ".config/DankMaterialShell/plugins/razerBattery/plugin.json".text = builtins.toJSON {
       id = "razerBattery";
-      name = "Razer Battery";
-      description = "Battery status and history for Razer wireless devices";
+      name = "Wireless Battery";
+      description = "Battery status and history for Logitech and Razer wireless devices";
       version = "1.0.0";
       author = "patrick";
       type = "widget";
@@ -944,7 +968,7 @@ in
       component = "./RazerBatteryWidget.qml";
       icon = "battery_full";
       permissions = [ "process" ];
-      dependencies = [ "openrazer-daemon" ];
+      dependencies = [ ];
     };
     ".config/DankMaterialShell/plugins/razerBattery/RazerBatteryWidget.qml".text = ''
       import QtQuick
@@ -963,7 +987,7 @@ in
 
           function refresh(recordHistory) {
               if (!statusProcess.running) {
-                  statusProcess.command = ["${razerBatteryStatus}/bin/dms-razer-battery-status"]
+                  statusProcess.command = ["${razerBatteryStatus}/bin/dms-wireless-battery-status"]
                       .concat(recordHistory ? ["--record-history"] : [])
                   statusProcess.running = true
               }
@@ -1037,7 +1061,7 @@ in
 
           Process {
               id: statusProcess
-              command: ["${razerBatteryStatus}/bin/dms-razer-battery-status"]
+              command: ["${razerBatteryStatus}/bin/dms-wireless-battery-status"]
               running: false
               stdout: StdioCollector {
                   onStreamFinished: root.rawResult = text
@@ -1049,7 +1073,7 @@ in
                       root.devices = result.devices || []
                       root.history = result.history || []
                   } catch (error) {
-                      console.warn("Razer Battery: invalid status response", error)
+                      console.warn("Wireless Battery: invalid status response", error)
                   }
               }
           }
@@ -1098,7 +1122,7 @@ in
 
                       Repeater {
                           model: [
-                              { kind: "mouse", label: "Viper Ultimate", icon: "mouse" },
+                              { kind: "mouse", label: "PRO X2 SUPERSTRIKE", icon: "mouse" },
                               { kind: "keyboard", label: "BlackWidow V3 Pro", icon: "keyboard" }
                           ]
 
@@ -1734,6 +1758,8 @@ in
   # Packages that should be installed to the user profile.
   home.packages = with pkgs; [
     fastfetch
+    # Logitech HID++ management and battery status for the PRO X2 SUPERSTRIKE.
+    solaar
 
     #communication
     signal-desktop
