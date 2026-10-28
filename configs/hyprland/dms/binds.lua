@@ -14,7 +14,7 @@ hl.bind("SUPER + SHIFT + Q", hl.dsp.exec_cmd("dms ipc call powermenu toggle"), {
 hl.bind("ALT + TAB", hl.dsp.focus({ monitor = "+1" }), { description = "Focus next monitor" })
 hl.bind("ALT + SHIFT + TAB", hl.dsp.focus({ monitor = "-1" }), { description = "Focus previous monitor" })
 hl.bind("CTRL + ALT + T", hl.dsp.exec_cmd("alacritty"), { description = "Open terminal" })
-hl.bind("SUPER + E", hl.dsp.exec_cmd("dolphin"), { description = "Open file manager" })
+hl.bind("SUPER + E", hl.dsp.exec_cmd("dfiles"), { description = "Open file manager" })
 hl.bind("SUPER + Q", hl.dsp.window.close(), { description = "Close focused window" })
 hl.bind("SUPER + F", hl.dsp.window.fullscreen({ action = "toggle" }), { description = "Toggle fullscreen" })
 hl.bind("SUPER + SHIFT + SPACE", hl.dsp.window.float({ action = "toggle" }), { description = "Toggle floating" })

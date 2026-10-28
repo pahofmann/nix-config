@@ -115,6 +115,22 @@ in {
   };
   services.resolved.settings.Resolve.FallbackDNS = [ "1.1.1.1" ];
 
+  # The Arctis Pro Wireless base station intermittently emits phantom volume
+  # up/down consumer-key events. DMS correctly handles those events, but they
+  # lower the PipeWire sink even though the Arctis soft-mixer workaround is
+  # active. Filter only those two keys at the originating USB device; other
+  # keyboards, Stream Deck actions, and Arctis input remain unaffected.
+  services.keyd = {
+    enable = true;
+    keyboards.arctis-pro-wireless-volume-filter = {
+      ids = [ "1038:1294" ];
+      settings.main = {
+        volumeup = "noop";
+        volumedown = "noop";
+      };
+    };
+  };
+
   # Hermes connects from the home server with a dedicated Ed25519 key.  Keep
   # SSH key-only, disable root access, and expose only the required LAN port.
   services.openssh = {

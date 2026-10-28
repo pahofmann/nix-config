@@ -129,7 +129,6 @@ let
       rightWidgets = [
         "markets"
         { id = "separator"; enabled = true; }
-        "bitwarden"
         { id = "notepadButton"; enabled = true; }
         { id = "colorPicker"; enabled = true; }
         { id = "quickCapture"; enabled = true; }
@@ -175,7 +174,6 @@ let
       ];
     };
     razerBattery.enabled = true;
-    bitwarden.enabled = true;
     dankKDEConnect.enabled = true;
     dankGifSearch.enabled = true;
     quickCapture.enabled = true;
@@ -190,9 +188,9 @@ let
     name = "dms-config-diff";
     runtimeInputs = [ pkgs.jq ];
     text = ''
-      settings_file="$HOME/.config/DankMaterialShell/settings.json"
-      clipboard_file="$HOME/.config/DankMaterialShell/clsettings.json"
-      plugin_settings_file="$HOME/.config/DankMaterialShell/plugin_settings.json"
+      settings_file="$HOME/.config/dms/settings.json"
+      clipboard_file="$HOME/.config/dms/clsettings.json"
+      plugin_settings_file="$HOME/.config/dms/plugin_settings.json"
       [ -r "$settings_file" ] || {
         echo "DMS settings not found: $settings_file" >&2
         exit 2
@@ -294,11 +292,30 @@ in
 
 {
   home.packages = [ dmsConfigDiff ];
+  # Dux 2 reads its mutable configuration from the XDG `dms` directories.
+  # Preserve existing UI choices on the first declarative migration without
+  # copying the legacy plugin directory, which Home Manager now owns below.
+  home.activation.migrateDuxConfig = lib.hm.dag.entryBefore ["configureDmsAppearance"] ''
+    legacyConfig="$HOME/.config/DankMaterialShell"
+    currentConfig="$HOME/.config/dms"
+    legacyState="$HOME/.local/state/DankMaterialShell"
+    currentState="$HOME/.local/state/dms"
+
+    ${pkgs.coreutils}/bin/mkdir -p "$currentConfig" "$currentState"
+    for name in settings.json clsettings.json plugin_settings.json; do
+      if [ -f "$legacyConfig/$name" ] && [ ! -e "$currentConfig/$name" ]; then
+        $DRY_RUN_CMD ${pkgs.coreutils}/bin/cp "$legacyConfig/$name" "$currentConfig/$name"
+      fi
+    done
+    if [ -f "$legacyState/session.json" ] && [ ! -e "$currentState/session.json" ]; then
+      $DRY_RUN_CMD ${pkgs.coreutils}/bin/cp "$legacyState/session.json" "$currentState/session.json"
+    fi
+  '';
   # DMS stores its Settings UI state in JSON.  Keep our intentional visual
   # choices declarative, but merge them so DMS can retain schema additions and
   # the user-selected wallpaper path.
   home.activation.configureDmsAppearance = lib.hm.dag.entryAfter ["writeBoundary"] ''
-    settingsFile="$HOME/.config/DankMaterialShell/settings.json"
+    settingsFile="$HOME/.config/dms/settings.json"
 
     if [ -f "$settingsFile" ]; then
       tmpFile="$(${pkgs.coreutils}/bin/mktemp)"
@@ -316,10 +333,10 @@ in
     fi
   '';
   home.activation.configureDmsClipboard = lib.hm.dag.entryAfter ["writeBoundary"] ''
-    settingsFile="$HOME/.config/DankMaterialShell/clsettings.json"
+    settingsFile="$HOME/.config/dms/clsettings.json"
     desiredSettings='${builtins.toJSON dmsManagedClipboardSettings}'
 
-    ${pkgs.coreutils}/bin/mkdir -p "$HOME/.config/DankMaterialShell"
+    ${pkgs.coreutils}/bin/mkdir -p "$HOME/.config/dms"
     tmpFile="$(${pkgs.coreutils}/bin/mktemp)"
     if [ -f "$settingsFile" ]; then
       ${pkgs.jq}/bin/jq --argjson desired "$desiredSettings" '. + $desired' \
@@ -330,10 +347,10 @@ in
     $DRY_RUN_CMD ${pkgs.coreutils}/bin/mv "$tmpFile" "$settingsFile"
   '';
   home.activation.configureDmsPluginSettings = lib.hm.dag.entryAfter ["writeBoundary"] ''
-    settingsFile="$HOME/.config/DankMaterialShell/plugin_settings.json"
+    settingsFile="$HOME/.config/dms/plugin_settings.json"
     desiredSettings='${builtins.toJSON dmsManagedPluginSettings}'
 
-    ${pkgs.coreutils}/bin/mkdir -p "$HOME/.config/DankMaterialShell"
+    ${pkgs.coreutils}/bin/mkdir -p "$HOME/.config/dms"
     tmpFile="$(${pkgs.coreutils}/bin/mktemp)"
     if [ -f "$settingsFile" ]; then
       ${pkgs.jq}/bin/jq --argjson desired "$desiredSettings" '. + $desired' \

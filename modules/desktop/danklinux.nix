@@ -35,10 +35,13 @@ in
   disabledModules = [
     "programs/wayland/dms-shell.nix"
     "services/display-managers/dms-greeter.nix"
+    "programs/dsearch.nix"
   ];
   imports = [
-    (inputs.nixpkgs-unstable + "/nixos/modules/programs/wayland/dms-shell.nix")
-    (inputs.nixpkgs-unstable + "/nixos/modules/services/display-managers/dms-greeter.nix")
+    (inputs.nixpkgs-unstable + "/nixos/modules/programs/wayland/dux-shell.nix")
+    (inputs.nixpkgs-unstable + "/nixos/modules/services/display-managers/dux-greeter.nix")
+    (inputs.nixpkgs-unstable + "/nixos/modules/programs/dux-files.nix")
+    (inputs.nixpkgs-unstable + "/nixos/modules/programs/dux-search.nix")
   ];
 
   options.patrick.danklinux.enable = lib.mkEnableOption "Dank Linux desktop";
@@ -58,9 +61,9 @@ in
       withUWSM = true;
     };
 
-    programs.dms-shell = {
+    programs.dux-shell = {
       enable = true;
-      package = dmsPkgs.dms-shell;
+      package = dmsPkgs.dux-shell;
       quickshell.package = dmsPkgs.quickshell;
       systemd = {
         enable = true;
@@ -68,14 +71,28 @@ in
       };
     };
 
+    programs.dux-files = {
+      enable = true;
+      package = dmsPkgs.dux-files;
+      systemd.enable = true;
+      portal.enable = true;
+    };
+
+    # Index files for the Dux launcher only while a graphical session exists.
+    programs.dux-search = {
+      enable = true;
+      package = dmsPkgs.dux-search;
+      systemd.target = "graphical-session.target";
+    };
+
     # DankGreeter is the styled login manager. It uses greetd, not SDDM.
     # Force the legacy Plasma stack off even if a transitive module or a stale
     # host overlay contributes defaults for it.
     services.displayManager.sddm.enable = lib.mkForce false;
     services.desktopManager.plasma6.enable = lib.mkForce false;
-    services.displayManager.dms-greeter = {
+    services.displayManager.dux-greeter = {
       enable = true;
-      package = dmsPkgs.dms-greeter;
+      package = dmsPkgs.dux-greeter;
       quickshell.package = dmsPkgs.quickshell;
       compositor.name = "hyprland";
       configHome = "/home/patrick";
@@ -87,7 +104,10 @@ in
       enable = true;
       xdgOpenUsePortal = true;
       extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
-      config.common.default = [ "hyprland" "gtk" ];
+      config.common = {
+        default = [ "hyprland" "gtk" ];
+        "org.freedesktop.impl.portal.FileChooser" = [ "dfiles" ];
+      };
     };
 
     # Installing hypridle alone only provides its unit file; it does not start
@@ -99,6 +119,9 @@ in
     # Keyring the single Secret Service and unlock it with the greetd login
     # password, so QtKeychain and Electron applications retain credentials.
     services.gnome.gnome-keyring.enable = true;
+    # Bitwarden Desktop is the sole SSH agent.  Keep GNOME Keyring for the
+    # Secret Service, but do not start its competing GCR SSH agent.
+    services.gnome.gcr-ssh-agent.enable = false;
     security.pam.services.greetd.enableGnomeKeyring = true;
 
     environment.sessionVariables = {
@@ -124,7 +147,7 @@ in
       pantheon.elementary-icon-theme
       brightnessctl
       playerctl
-      dmsPkgs.dankcalendar
+      dmsPkgs.dux-calendar
     ];
 
     # Swappy's tool glyphs use Font Awesome 5 private-use code points.  Without
